@@ -5,6 +5,9 @@ using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour {
 
+	public GameManager gameManager;
+	private int storedNumCombatActions;
+
 	public Button startWaveButton;
 	public Button switchBuildMenusButton;
 	public Button nextTurnButton;
@@ -29,6 +32,8 @@ public class UIManager : MonoBehaviour {
 
 	// Use this for initialization
 	public void Initialize () {
+		gameManager = GameManager.instance;
+
 		startWaveButton = GameObject.Find ("startWaveButton").GetComponent<Button> ();
 		switchBuildMenusButton = GameObject.Find ("switchBuildMenusButton").GetComponent<Button> ();
 		nextTurnButton = GameObject.Find ("nextTurnButton").GetComponent<Button> ();
@@ -71,11 +76,46 @@ public class UIManager : MonoBehaviour {
 			selectedUnitText.enabled = true;
 			detailToggle.gameObject.SetActive (true);
 			vitalStatsText.enabled = true;
+			if (gameManager.combatManager.combatModeEnabled && gameManager.selectedObject.tag == "Player") {
+				combatPanel.SetActive (true);
+			}
 		} else {
 			selectedUnitText.enabled = false;
 			detailToggle.isOn = false;
 			detailToggle.gameObject.SetActive (false);
 			vitalStatsText.enabled = false;
+			if (gameManager.combatManager.combatModeEnabled) {
+				combatPanel.SetActive (false);
+			}
+		}
+	}
+
+	public void ToggleSelectedUnitUI(bool turnOn, int numCombatActions) {
+		if (gameManager.combatManager.combatModeEnabled && gameManager.selectedObject.tag == "Player") {
+			storedNumCombatActions = numCombatActions;
+			ToggleCombatPanelButtons ();
+		}
+		ToggleSelectedUnitUI(turnOn);
+	}
+
+	public void ToggleCombatPanelButtons () {
+		Debug.Log ("ToggleCombatPanelButtons");
+		if (gameManager.combatManager.targetingActive) {
+			if (combatPanelButtons [0].gameObject.activeSelf == false)
+				combatPanelButtons [0].gameObject.SetActive(true);
+			for (int i = 1; i < combatPanelButtons.Length; i++) {
+				if (combatPanelButtons [i].gameObject.activeSelf == true)
+					combatPanelButtons [i].gameObject.SetActive(false);
+			}
+		} else {
+			if (combatPanelButtons [0].gameObject.activeSelf == true)
+				combatPanelButtons [0].gameObject.SetActive(false);
+			for (int i = 1; i < combatPanelButtons.Length; i++) {
+				if (i <= storedNumCombatActions && combatPanelButtons [i].gameObject.activeSelf == false)
+					combatPanelButtons [i].gameObject.SetActive(true);
+				else if (i > storedNumCombatActions && combatPanelButtons [i].gameObject.activeSelf == true)
+					combatPanelButtons [i].gameObject.SetActive(false);
+			}
 		}
 	}
 
@@ -142,6 +182,10 @@ public class UIManager : MonoBehaviour {
 	public void UpdateCashText(long cash) {
 		cashText.text = "$" + cash;
 	}
+		
+	public void UpdateNameText (string unitName) {
+		selectedUnitText.text = unitName;
+	}
 
 	public void UpdateVitalsText(int currentHP, int maxHP, int currentAP, int maxAP) {
 		if (maxAP != 0) {
@@ -149,6 +193,10 @@ public class UIManager : MonoBehaviour {
 		} else {
 			vitalStatsText.text = "HP " + currentHP + "/" + maxHP;
 		}
+	}
+
+	public void UpdateDetailsText(string status, int maxHP, int atk, int def, int maxAP, string special) {
+		detailPanel.GetComponentInChildren<Text> ().text = "Status: " + status + "\nHP: " + maxHP + "\nAtk: " + atk + "\nDef: " + def + "\nAP: " + maxAP + "\nSpecial: " + special;
 	}
 
 	public void UpdateWaveNumberText(int waveNum) {

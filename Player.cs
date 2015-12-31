@@ -8,26 +8,26 @@ using UnityEngine.Events;
 public class Player : MovingObject {
 
 	public int wallDamage = 5;
+	public int damage = 5;
 	public static Player instance = null;
-	public int hp = 10;
 	public int playerScore = 0;
 	public Text scoreText; 
 	public Text turnStatusText;
 	public Text buildModeText;
-	public int ap = 5;
-	public string unitName = "Valerie";
+
 	public bool isAlly = true;
 	private Path storedPath = null;
 	//public GameObject[] wallTiles;
 
 	public Seeker seeker;
 	private Path path;
+	private int storedPathCost = 666;
 	public bool buttonMouseOver = false;
 
 
 	protected override void Start () {
 		AstarPath.active.Scan ();
-
+	
 		turnStatusText = GameObject.Find("turnStatusText").GetComponent<Text>();
 		turnStatusText.text = "Player Turn";
 		seeker = GetComponent<Seeker> ();
@@ -44,21 +44,43 @@ public class Player : MovingObject {
 		GameManager.instance.ToggleColliders ("ally", false);
 		AstarPath.active.Scan ();
 		GameManager.instance.ToggleColliders ("ally", true);
+
+		unitName = "Valerie";
 	}
 
 	// Update is called once per frame
 	void Update () { 
-		if (isSelected && isAlly && ap > 0) {
+		if (isSelected && isAlly && currentAP > 0 && !GameManager.instance.combatManager.targetingActive) {
 			Vector3 mousePoint = GameManager.instance.playerInput.GetMouseGridPosition ();
 			if (mousePoint != GameManager.instance.playerInput.currentMouseGridLoc) {
 				GameManager.instance.playerInput.currentMouseGridLoc = mousePoint;
 				Path path = seeker.StartPath (new Vector3 (transform.position.x, transform.position.y, 0), mousePoint);
 				AstarPath.WaitForPath (path);
+
 				if (ValidatePath (path, mousePoint)) {
-					storedPath = path;
-					GameManager.instance.uiManager.RenderPathLine (path.vectorPath);
-				} else
-					storedPath = null;
+
+				}
+
+
+
+				if (GameManager.instance.combatManager.combatModeEnabled) {
+					int pathCost = CalculatePathCost (path, mousePoint);
+					if (ValidatePath (path, mousePoint) && (currentAP - pathCost) >= 0) {
+						storedPath = path;
+						storedPathCost = pathCost;
+						GameManager.instance.uiManager.RenderPathLine (path.vectorPath);
+						GameManager.instance.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP - pathCost, maxAP);
+					} else if (storedPath != null) {
+						ResetPath ();
+					}
+				} else {
+					if (ValidatePath (path, mousePoint)) {
+						storedPath = path;
+						GameManager.instance.uiManager.RenderPathLine (path.vectorPath);
+					} else if (storedPath != null) {
+						ResetPath ();
+					}
+				}
 			}
 		}
 
@@ -149,11 +171,22 @@ public class Player : MovingObject {
 	} 
 
 	protected void ExecuteMove () {
-		if (isSelected && ap > 0 && storedPath != null) {
+		if (isSelected && currentAP > 0 && storedPath != null) {
 			for (int i = 0; i < storedPath.vectorPath.Count; i++) {
 				this.transform.Translate(new Vector2(storedPath.vectorPath[i].x - this.transform.position.x, storedPath.vectorPath[i].y - this.transform.position.y));
 			}
-			GameManager.instance.uiManager.UnrenderPathLine ();
+			if (GameManager.instance.combatManager.combatModeEnabled)
+				currentAP -= storedPathCost;
+			ResetPath ();
+		}
+	}
+
+	protected void ResetPath () {
+		storedPath = null;
+		GameManager.instance.uiManager.UnrenderPathLine ();
+		if (GameManager.instance.combatManager.combatModeEnabled) {
+			storedPathCost = 666;
+			GameManager.instance.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP);
 		}
 	}
 
@@ -161,6 +194,26 @@ public class Player : MovingObject {
 		Debug.Log ("Path returned. Error? " + p.error);
 		if (!p.error)
 			path = p;
+	}
+
+	protected void TargetTestAttack() {
+		GameManager.instance.combatManager.ActivateTargeting ("ExecuteTestAttack");
+	}
+
+	protected void ExecuteTestAttack(GameObject hitTarget) {
+		hitTarget.SendMessage ("Damage", damage, SendMessageOptions.DontRequireReceiver);
+		ScanPaths ();
+	}
+
+	protected override void ProcessCombatPanelClick (int buttonNum) {
+		Debug.Log (buttonNum);
+		switch (buttonNum) {
+		case 1:
+			TargetTestAttack ();
+			break;
+		default:
+			break;
+		}
 	}
 
 	protected override void AttemptMove <T> (int xDir, int yDir) {
@@ -177,7 +230,7 @@ public class Player : MovingObject {
 	}
 
 	public void DamagePlayer (int loss) {
-		hp -= loss;
+		currentHP -= loss;
 		CheckIfGameOver ();
 	}
 
@@ -191,7 +244,7 @@ public class Player : MovingObject {
 	}
 
 	private void CheckIfGameOver() {
-		if (hp <= 0) {
+		if (currentHP <= 0) {
 			//scoreText.text = "Stamina: 0/100. You can refill your stamina in the shop!";
 			GameManager.instance.GameOver ();
 		}

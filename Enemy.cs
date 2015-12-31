@@ -5,7 +5,6 @@ public class Enemy : MovingObject {
 
 	public int playerDamage = 10;
 	public int wallDamage = 5;
-	public int hp = 10;
 
 	private Animator animator;
 	private Transform target;
@@ -17,6 +16,7 @@ public class Enemy : MovingObject {
 		animator = GetComponent<Animator> ();
 		seeker = GetComponent<Seeker> ();
 		base.Start ();
+		unitName = "Sans";
 	}
 
 	protected override void AttemptMove <T> (int xDir, int yDir) {
@@ -54,6 +54,15 @@ public class Enemy : MovingObject {
 				Wall hitWall = component as Wall;
 				hitWall.DamageWall (wallDamage);
 			}
+		}
+	}
+
+	void Damage (int damageTaken) {
+		currentHP -= damageTaken;
+		if (currentHP <= 0) {
+			GameManager.instance.combatManager.activeEnemies.Remove (gameObject);
+			GameManager.instance.combatManager.targetedObjects.Remove (gameObject);
+			gameObject.SetActive (false);
 		}
 	}
 }

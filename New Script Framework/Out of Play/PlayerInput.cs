@@ -23,14 +23,27 @@ public class PlayerInput : MonoBehaviour {
 		gameManager = GameManager.instance; 
 
 		gameManager.uiManager.startWaveButton.onClick.AddListener (() => {
-			Debug.Log("Start Wave!"); 
+			gameManager.combatManager.StartCombat();
 		});
 		gameManager.uiManager.nextTurnButton.onClick.AddListener (() => {
-			Debug.Log("Next Turn!"); 
+			gameManager.combatManager.StartNextTurn();
 		});
 		gameManager.uiManager.switchBuildMenusButton.onClick.AddListener (() => {
 			Debug.Log("Switch Build Menus!"); 
 		});
+
+		gameManager.uiManager.combatPanelButtons [0].onClick.AddListener (() => {
+			gameManager.combatManager.DeactivateTargeting();
+		});
+
+		for (int i = 1; i < gameManager.uiManager.combatPanelButtons.Length; i++) {
+			int j = i;
+			gameManager.uiManager.combatPanelButtons [i].onClick.AddListener (() => {
+				gameManager.selectedObject.SendMessage("ProcessCombatPanelClick", j);
+			});
+		}
+
+
 		gameManager.uiManager.buildToggle.onValueChanged.AddListener ((value) => {
 			ToggleBuildMode(value);
 		});
@@ -44,8 +57,7 @@ public class PlayerInput : MonoBehaviour {
 			Debug.Log ("Enable Build Mode!");
 			gameManager.uiManager.ToggleBuildUI (true);
 			gameManager.buildMode = true;
-			if (gameManager.selectedObject != null)
-				gameManager.selectedObject.SendMessage ("Deselect");
+			gameManager.DeselectObject ();
 		} else {
 			Debug.Log ("Disable Build Mode!");
 			gameManager.uiManager.ToggleBuildUI (false);
@@ -72,25 +84,30 @@ public class PlayerInput : MonoBehaviour {
 				GameObject tileChoice = gameManager.boardManager.wallTiles [Random.Range (0, gameManager.boardManager.wallTiles.Length)];
 				GameObject instance = Instantiate (tileChoice, GetMouseGridPosition(), Quaternion.identity) as GameObject;
 				instance.transform.SetParent (GameManager.instance.boardManager.wallHolder);
-			} else if (gameManager.targetingActive) {
-				// Confirm target selection via selected unit
+			} else if (gameManager.combatManager.combatModeEnabled && gameManager.combatManager.targetingActive) {
+				// Confirm target selection during targeting
+				int layerMask = (1 << 8);
+				Collider2D hitCollider = Physics2D.OverlapPoint (GetMouseGridPosition(), layerMask);
+				if (hitCollider != null) {
+					gameManager.combatManager.ProcessHitTarget (hitCollider.gameObject);
+				} 
 			} else {
 				// Select/Deselect objects
 				int layerMask = (1 << 8) | (1 << 9);
 				Collider2D hitCollider = Physics2D.OverlapPoint (GetMouseGridPosition(), layerMask);
 				GameObject gameObjectHit = null;
 				if (hitCollider != null) {
-					if (gameManager.selectedObject != null)
-						gameManager.selectedObject.SendMessage ("Deselect");
+					gameManager.DeselectObject ();
 					gameObjectHit = hitCollider.gameObject;
 					gameObjectHit.SendMessage ("Select", SendMessageOptions.DontRequireReceiver);
 				} 
 
-				if (gameManager.selectedObject != null) {
-					if (hitCollider == null || (gameObjectHit != gameManager.selectedObject)) {
-						gameManager.selectedObject.SendMessage ("Deselect");
-					}
+
+				if (hitCollider == null || (gameObjectHit != gameManager.selectedObject)) {
+					gameManager.DeselectObject ();
+
 				}
+
 				// Select object
 			}
 
@@ -101,8 +118,9 @@ public class PlayerInput : MonoBehaviour {
 		if (Input.GetMouseButtonDown (1) && !EventSystem.current.IsPointerOverGameObject ()) {
 			if (gameManager.buildMode) {
 				// Rotate object in build mode
-			} else if (gameManager.targetingActive) {
-				// Cancel target selection
+			} else if (gameManager.combatManager.targetingActive) {
+				Debug.Log ("Test");
+				gameManager.combatManager.DeactivateTargeting ();
 			} else if (gameManager.selectedObject != null) {
 				gameManager.selectedObject.SendMessage ("ExecuteMove", SendMessageOptions.DontRequireReceiver);
 				// Automove if object selected and AP > 0

@@ -56,6 +56,11 @@ public class GameManager : MonoBehaviour {
 		selectedObject = null;
 	}
 
+	public void DeselectObject() {
+		if (selectedObject != null)
+			selectedObject.SendMessage ("Deselect");
+	}
+
 	public void GameOver() {
 		enabled = false;
 	}
