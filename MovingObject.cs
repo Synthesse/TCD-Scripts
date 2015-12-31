@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using Pathfinding;
 using System.Collections;
 
 public abstract class MovingObject : MonoBehaviour {
@@ -9,11 +10,14 @@ public abstract class MovingObject : MonoBehaviour {
 	protected BoxCollider2D boxCollider;
 	protected Rigidbody2D rb2D;
 	private float inverseMoveTime;
+	protected Color storedColor;
+	protected bool isSelected = false;
 
 	protected virtual void Start () {
 		boxCollider = GetComponent<BoxCollider2D>();
 		rb2D = GetComponent<Rigidbody2D>();
 		inverseMoveTime = 1f / moveTime;
+		storedColor = gameObject.GetComponent<SpriteRenderer> ().color;
 	}
 
 	protected bool Move (int xDir, int yDir, out RaycastHit2D hit) {
@@ -41,6 +45,44 @@ public abstract class MovingObject : MonoBehaviour {
 			sqrRemainingDistance = ((Vector2)transform.position - end).sqrMagnitude;
 			yield return null;
 		}
+	}
+
+	protected bool ValidatePath (Path path, Vector3 endPoint) {
+		return (path != null && ((Vector2)path.vectorPath [path.vectorPath.Count - 1] == (Vector2)endPoint));
+	}
+
+	protected void ScanPaths () {
+		boxCollider.enabled = false;
+		AstarPath.active.Scan ();
+		boxCollider.enabled = true;
+	}
+
+	protected Vector2 GridLocate () {
+		return (new Vector2 (Mathf.RoundToInt (transform.position.x), Mathf.RoundToInt (transform.position.y)));
+	}
+
+	protected Vector2[] GridLocate (bool giveCorners) {
+		Vector2[] gridLocations = new Vector2[4];
+		return (gridLocations);
+	}
+
+	protected void Select () {
+		gameObject.GetComponent<SpriteRenderer> ().color = new Color (0,0.5f,0,1);
+		GameManager.instance.selectedObject = gameObject;
+		isSelected = true;
+		GameManager.instance.playerInput.currentMouseGridLoc = (Vector3) GridLocate ();
+		ScanPaths ();
+		GameManager.instance.uiManager.ToggleSelectedUnitUI (true);
+	}
+
+	protected void Deselect () {
+		gameObject.GetComponent<SpriteRenderer> ().color = storedColor;
+		Debug.Log (storedColor);
+		GameManager.instance.selectedObject = null;
+		isSelected = false;
+		GameManager.instance.uiManager.UnrenderPathLine ();
+		GameManager.instance.uiManager.ToggleSelectedUnitUI (false);
+		//GameManager.instance.playerInput.currentMouseGridLoc = null;
 	}
 
 	protected virtual void AttemptMove <T> (int xDir, int yDir) 

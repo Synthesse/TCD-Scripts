@@ -91,7 +91,7 @@ public class BoardManager : MonoBehaviour {
 
 	void FillRemainingSpaceWithWalls () {
 		for (int i = 0; i < gridPositions.Count; i++) {
-			if (Random.value > 0.3) {
+			if (Random.value > 0.7) {
 				GameObject tileChoice = wallTiles [Random.Range (0, wallTiles.Length)];
 				GameObject instance = Instantiate (tileChoice, gridPositions [i], Quaternion.identity) as GameObject;
 				instance.transform.SetParent (wallHolder);

@@ -2,6 +2,8 @@
 using System.Collections;
 using UnityEngine.UI;
 using Pathfinding;
+using UnityEngine.EventSystems;
+using UnityEngine.Events;
 
 public class Player : MovingObject {
 
@@ -12,21 +14,25 @@ public class Player : MovingObject {
 	public Text scoreText; 
 	public Text turnStatusText;
 	public Text buildModeText;
+	public int ap = 5;
+	public string unitName = "Valerie";
+	public bool isAlly = true;
+	private Path storedPath = null;
 	//public GameObject[] wallTiles;
 
-	private Seeker seeker;
+	public Seeker seeker;
 	private Path path;
+	public bool buttonMouseOver = false;
+
 
 	protected override void Start () {
 		AstarPath.active.Scan ();
 
-		scoreText = GameObject.Find("scoreText").GetComponent<Text>();
-		scoreText.text = "Score: " + playerScore;
 		turnStatusText = GameObject.Find("turnStatusText").GetComponent<Text>();
 		turnStatusText.text = "Player Turn";
-		buildModeText = GameObject.Find("buildModeText").GetComponent<Text>();
-		buildModeText.enabled = false;
 		seeker = GetComponent<Seeker> ();
+		//testButton.onClick.AddListener (() => { DamagePlayer(1); Debug.Log ("HAH");
+		//});
 
 		if (instance == null)
 			instance = this;
@@ -34,93 +40,120 @@ public class Player : MovingObject {
 			Destroy (gameObject);
 
 		base.Start ();
+
+		GameManager.instance.ToggleColliders ("ally", false);
+		AstarPath.active.Scan ();
+		GameManager.instance.ToggleColliders ("ally", true);
 	}
 
 	// Update is called once per frame
-	void Update () {
-		if (Input.GetKeyDown("escape"))
-			Application.Quit();
-
-		if (Input.GetKeyDown ("p")) {
-			GameManager.instance.gamePaused = GameManager.instance.gamePaused ? false : true;
-
-		} else if (!GameManager.instance.gamePaused) {
-			if (Input.GetKeyDown ("b")) {
-				if (GameManager.instance.buildMode) {
-					GameManager.instance.buildMode = false;
-					buildModeText.enabled = false;
-					turnStatusText.enabled = true;
-				} else {
-					GameManager.instance.buildMode = true;
-					turnStatusText.enabled = false;
-					buildModeText.enabled = true;
-				}
-			} else if (Input.GetKeyDown ("c")) {
-				GameManager.instance.combatMode = GameManager.instance.combatMode ? false : true;
-			}
-
-			if (GameManager.instance.buildMode && Input.GetMouseButtonDown (0)) {
-				Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-				int rayx = Mathf.RoundToInt (ray.origin.x);
-				int rayy = Mathf.RoundToInt (ray.origin.y);
-				Debug.Log (GameManager.instance.boardScript.combatBlockingArray [rayx, rayy]);
-				GameObject tileChoice = GameManager.instance.boardScript.wallTiles [Random.Range (0, GameManager.instance.boardScript.wallTiles.Length)];
-				GameObject instance = Instantiate (tileChoice, new Vector2(rayx, rayy), Quaternion.identity) as GameObject;
-				instance.transform.SetParent (GameManager.instance.boardScript.wallHolder);
-
-			}
-
-			if (!GameManager.instance.buildMode && GameManager.instance.playersTurn && Input.GetMouseButtonDown (0)) {
-				Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-				Vector3 rayPoint = new Vector3 (Mathf.RoundToInt (ray.origin.x), Mathf.RoundToInt (ray.origin.y), 0);
-				//this.boxCollider.enabled = false;
-				GameManager.instance.ToggleColliders ("ally", false);
-				AstarPath.active.Scan ();
-
-				path = seeker.StartPath (new Vector3 (transform.position.x, transform.position.y, 0), rayPoint);
+	void Update () { 
+		if (isSelected && isAlly && ap > 0) {
+			Vector3 mousePoint = GameManager.instance.playerInput.GetMouseGridPosition ();
+			if (mousePoint != GameManager.instance.playerInput.currentMouseGridLoc) {
+				GameManager.instance.playerInput.currentMouseGridLoc = mousePoint;
+				Path path = seeker.StartPath (new Vector3 (transform.position.x, transform.position.y, 0), mousePoint);
 				AstarPath.WaitForPath (path);
-
-				if (path != null && ( (Vector2) path.vectorPath[path.vectorPath.Count-1] == (Vector2) rayPoint)) {
-					Debug.Log (path.vectorPath.Count);
-					//Vector3 temp_position = this.transform.position;
-					for (int i = 0; i < path.vectorPath.Count; i++) {
-						Debug.Log (path.vectorPath [i]);
-						//Debug.Log (this.transform.position);
-						//AttemptMove<Wall> (Mathf.RoundToInt (path.vectorPath [i].x - this.transform.position.x), Mathf.RoundToInt (path.vectorPath [i].y - this.transform.position.y));
-
-						//AttemptMove<Wall> (Mathf.RoundToInt (path.vectorPath [i].x - temp_position.x), Mathf.RoundToInt (path.vectorPath [i].y - temp_position.y));
-						//temp_position = path.vectorPath [i];
-
-						//StartCoroutine(SmoothMovement((Vector2) path.vectorPath [i]));
-
-
-						//rb2D.MovePosition ((Vector2) path.vectorPath [i]);
-
-						//Debug.Log(Vector2.Distance (path.vectorPath [i], this.transform.position));
-						this.transform.Translate(new Vector2(path.vectorPath[i].x - this.transform.position.x, path.vectorPath[i].y - this.transform.position.y));
-
-						/*int j = 0;
-						while (Vector2.Distance (path.vectorPath [i], this.transform.position) > Mathf.Epsilon && j < 100) {
-							Vector2 dir = (path.vectorPath [i] - this.transform.position).normalized;
-							this.transform.Translate (dir);
-							j++;
-						}*/
-
-					}
-
-					GameManager.instance.ToggleColliders ("ally", true);
-					//this.boxCollider.enabled = true;
-					MoveExecuted ();
-				}
-
-				/*if (Mathf.Pow ((ray.origin.x - this.transform.position.x), 2) > Mathf.Pow ((ray.origin.y - this.transform.position.y), 2)) {
-					AttemptMove<Wall> (Mathf.RoundToInt (ray.origin.x - this.transform.position.x), 0); 
-				} else {
-					AttemptMove<Wall> (0, Mathf.RoundToInt(ray.origin.y - this.transform.position.y)); 
-				}*/
-
-				//AttemptMove<Wall> (Mathf.RoundToInt (ray.origin.x - this.transform.position.x), Mathf.RoundToInt(ray.origin.y - this.transform.position.y)); 
+				if (ValidatePath (path, mousePoint)) {
+					storedPath = path;
+					GameManager.instance.uiManager.RenderPathLine (path.vectorPath);
+				} else
+					storedPath = null;
 			}
+		}
+
+//		if (Input.GetMouseButtonDown (0) && !EventSystem.current.IsPointerOverGameObject()) { 
+//			Debug.Log ("HOO");
+//		};
+//
+//		if (Input.GetKeyDown ("p")) {
+//			GameManager.instance.gamePaused = GameManager.instance.gamePaused ? false : true;
+//
+//		} else if (!GameManager.instance.gamePaused) {
+//			if (Input.GetKeyDown ("b")) {
+//				if (GameManager.instance.buildMode) {
+//					GameManager.instance.buildMode = false;
+//					turnStatusText.enabled = true;
+//				} else {
+//					GameManager.instance.buildMode = true;
+//					turnStatusText.enabled = false;
+//				}
+//			} else if (Input.GetKeyDown ("c")) {
+//				GameManager.instance.combatMode = GameManager.instance.combatMode ? false : true;
+//			}
+//
+//			/*if (GameManager.instance.buildMode && Input.GetMouseButtonDown (0)) {
+//				Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+//				int rayx = Mathf.RoundToInt (ray.origin.x);
+//				int rayy = Mathf.RoundToInt (ray.origin.y);
+//				Debug.Log (GameManager.instance.boardManager.combatBlockingArray [rayx, rayy]);
+//				GameObject tileChoice = GameManager.instance.boardManager.wallTiles [Random.Range (0, GameManager.instance.boardManager.wallTiles.Length)];
+//				GameObject instance = Instantiate (tileChoice, new Vector2(rayx, rayy), Quaternion.identity) as GameObject;
+//				instance.transform.SetParent (GameManager.instance.boardManager.wallHolder);
+//
+//			}*/
+//
+//			if (!GameManager.instance.buildMode && GameManager.instance.playersTurn && Input.GetMouseButtonDown (0)) {
+//				Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+//				Vector3 rayPoint = new Vector3 (Mathf.RoundToInt (ray.origin.x), Mathf.RoundToInt (ray.origin.y), 0);
+//				//this.boxCollider.enabled = false;
+//				GameManager.instance.ToggleColliders ("ally", false);
+//				AstarPath.active.Scan ();
+//
+//				path = seeker.StartPath (new Vector3 (transform.position.x, transform.position.y, 0), rayPoint);
+//				AstarPath.WaitForPath (path);
+//
+//				if (path != null && ( (Vector2) path.vectorPath[path.vectorPath.Count-1] == (Vector2) rayPoint)) {
+//					Debug.Log (path.vectorPath.Count);
+//					//GameManager.instance.uiManager.renderPathLine (path.vectorPath);
+//					//Vector3 temp_position = this.transform.position;
+//					for (int i = 0; i < path.vectorPath.Count; i++) {
+//						Debug.Log (path.vectorPath [i]);
+//						//Debug.Log (this.transform.position);
+//						//AttemptMove<Wall> (Mathf.RoundToInt (path.vectorPath [i].x - this.transform.position.x), Mathf.RoundToInt (path.vectorPath [i].y - this.transform.position.y));
+//
+//						//AttemptMove<Wall> (Mathf.RoundToInt (path.vectorPath [i].x - temp_position.x), Mathf.RoundToInt (path.vectorPath [i].y - temp_position.y));
+//						//temp_position = path.vectorPath [i];
+//
+//						//StartCoroutine(SmoothMovement((Vector2) path.vectorPath [i]));
+//
+//
+//						//rb2D.MovePosition ((Vector2) path.vectorPath [i]);
+//
+//						//Debug.Log(Vector2.Distance (path.vectorPath [i], this.transform.position));
+//						this.transform.Translate(new Vector2(path.vectorPath[i].x - this.transform.position.x, path.vectorPath[i].y - this.transform.position.y));
+//
+//						/*int j = 0;
+//						while (Vector2.Distance (path.vectorPath [i], this.transform.position) > Mathf.Epsilon && j < 100) {
+//							Vector2 dir = (path.vectorPath [i] - this.transform.position).normalized;
+//							this.transform.Translate (dir);
+//							j++;
+//						}*/
+//
+//					}
+//					AstarPath.active.Scan ();
+//					GameManager.instance.ToggleColliders ("ally", true);
+//					//this.boxCollider.enabled = true;
+//					MoveExecuted ();
+//				}
+//
+//				/*if (Mathf.Pow ((ray.origin.x - this.transform.position.x), 2) > Mathf.Pow ((ray.origin.y - this.transform.position.y), 2)) {
+//					AttemptMove<Wall> (Mathf.RoundToInt (ray.origin.x - this.transform.position.x), 0); 
+//				} else {
+//					AttemptMove<Wall> (0, Mathf.RoundToInt(ray.origin.y - this.transform.position.y)); 
+//				}*/
+//
+//				//AttemptMove<Wall> (Mathf.RoundToInt (ray.origin.x - this.transform.position.x), Mathf.RoundToInt(ray.origin.y - this.transform.position.y)); 
+//			}
+//		}
+	} 
+
+	protected void ExecuteMove () {
+		if (isSelected && ap > 0 && storedPath != null) {
+			for (int i = 0; i < storedPath.vectorPath.Count; i++) {
+				this.transform.Translate(new Vector2(storedPath.vectorPath[i].x - this.transform.position.x, storedPath.vectorPath[i].y - this.transform.position.y));
+			}
+			GameManager.instance.uiManager.UnrenderPathLine ();
 		}
 	}
 
@@ -150,7 +183,6 @@ public class Player : MovingObject {
 
 	private void MoveExecuted() {
 		playerScore++;
-		scoreText.text = "Score: " + playerScore;
 
 		CheckIfGameOver ();
 
@@ -160,7 +192,6 @@ public class Player : MovingObject {
 
 	private void CheckIfGameOver() {
 		if (hp <= 0) {
-			scoreText.text = "GAME OVER - Score: " + playerScore;
 			//scoreText.text = "Stamina: 0/100. You can refill your stamina in the shop!";
 			GameManager.instance.GameOver ();
 		}

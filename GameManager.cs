@@ -7,11 +7,20 @@ public class GameManager : MonoBehaviour {
 
 	public float turnDelay = 0.1f;
 	public static GameManager instance = null;
-	public BoardManager boardScript;
+	public BoardManager boardManager;
+	public PlayerInput playerInput;
+	public UIManager uiManager;
+	public BuildStateManager buildManager;
+	public CombatStateManager combatManager;
 	public bool combatMode = false;
 	public bool buildMode = false;
 	public bool gamePaused = false;
-	[HideInInspector] public bool playersTurn = true;
+	public bool playersTurn = true;
+	public long cash = 0;
+	public int waveNumber = 0;
+	public GameObject selectedObject;
+	public Player selectedUnit;
+	public bool targetingActive = false;
 
 
 	private List<Enemy> enemyList;
@@ -27,7 +36,14 @@ public class GameManager : MonoBehaviour {
 
 		DontDestroyOnLoad (gameObject);
 		enemyList = new List<Enemy> ();
-		boardScript = GetComponent<BoardManager> ();
+		uiManager = GetComponent<UIManager> ();
+		boardManager = GetComponent<BoardManager> ();
+		playerInput = GetComponent<PlayerInput> ();
+		combatManager = GetComponent<CombatStateManager> ();
+		buildManager = GetComponent<BuildStateManager> ();
+		uiManager.Initialize ();
+		playerInput.Initialize ();
+
 
 		InitGame ();
 
@@ -35,7 +51,9 @@ public class GameManager : MonoBehaviour {
 
 	void InitGame() {
 		
-		boardScript.SetupScene ();
+		boardManager.SetupScene ();
+		selectedUnit = GameObject.FindGameObjectWithTag ("Player").GetComponent<Player> ();
+		selectedObject = null;
 	}
 
 	public void GameOver() {
