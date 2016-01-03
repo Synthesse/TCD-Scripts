@@ -175,8 +175,8 @@ public class Player : MovingObject {
 			for (int i = 0; i < storedPath.vectorPath.Count; i++) {
 				this.transform.Translate(new Vector2(storedPath.vectorPath[i].x - this.transform.position.x, storedPath.vectorPath[i].y - this.transform.position.y));
 			}
-			if (GameManager.instance.combatManager.combatModeEnabled)
-				currentAP -= storedPathCost;
+
+			DeductAP (storedPathCost);
 			ResetPath ();
 		}
 	}
@@ -201,7 +201,9 @@ public class Player : MovingObject {
 	}
 
 	protected void ExecuteTestAttack(GameObject hitTarget) {
+		int attackAPCost = 2;
 		hitTarget.SendMessage ("Damage", damage, SendMessageOptions.DontRequireReceiver);
+		DeductAP (attackAPCost);
 		ScanPaths ();
 	}
 

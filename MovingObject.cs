@@ -70,6 +70,14 @@ public abstract class MovingObject : MonoBehaviour {
 		return Mathf.CeilToInt (runningCost/2f);
 	}
 
+	protected void DeductAP (int loss) {
+		if (GameManager.instance.combatManager.combatModeEnabled) {
+			currentAP -= loss;
+			GameManager.instance.combatManager.currentSideAPPool -= loss;
+			GameManager.instance.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP);
+		}
+	}
+
 	protected void ScanPaths () {
 		boxCollider.enabled = false;
 		AstarPath.active.Scan ();
