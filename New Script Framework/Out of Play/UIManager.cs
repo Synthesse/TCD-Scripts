@@ -193,6 +193,17 @@ public class UIManager : MonoBehaviour {
 		} else {
 			vitalStatsText.text = "HP " + currentHP + "/" + maxHP;
 		}
+		if (vitalStatsText.color != Color.white) {
+			vitalStatsText.color = Color.white;
+		}
+	}
+	public void UpdateVitalsText(int currentHP, int maxHP, int currentAP, int maxAP, Color color) {
+		if (maxAP != 0) {
+			vitalStatsText.text = "HP " + currentHP + "/" + maxHP + "   AP " + currentAP + "/" + maxAP;
+		} else {
+			vitalStatsText.text = "HP " + currentHP + "/" + maxHP;
+		}
+		vitalStatsText.color = color;
 	}
 
 	public void UpdateDetailsText(string status, int maxHP, int atk, int def, int maxAP, string special) {

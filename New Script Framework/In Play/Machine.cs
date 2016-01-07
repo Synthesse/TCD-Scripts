@@ -2,8 +2,8 @@
 using System.Collections;
 
 //SWITCH TO THIS ONCE WE FULLY IMPLEMENT INTERFACE REQUIREMENTS
-//public class Machine : PhysicalObject, IMachine {
-public class Machine : PhysicalObject {
+//public class Machine : SelectableObject, IMachine {
+public class Machine : SelectableObject {
 	
 	// Use this for initialization
 	void Start () {

@@ -45,7 +45,7 @@ public class Player : MovingObject {
 		AstarPath.active.Scan ();
 		GameManager.instance.ToggleColliders ("ally", true);
 
-		unitName = "Valerie";
+		objectName = "Valerie";
 	}
 
 	// Update is called once per frame
@@ -56,12 +56,6 @@ public class Player : MovingObject {
 				GameManager.instance.playerInput.currentMouseGridLoc = mousePoint;
 				Path path = seeker.StartPath (new Vector3 (transform.position.x, transform.position.y, 0), mousePoint);
 				AstarPath.WaitForPath (path);
-
-				if (ValidatePath (path, mousePoint)) {
-
-				}
-
-
 
 				if (GameManager.instance.combatManager.combatModeEnabled) {
 					int pathCost = CalculatePathCost (path, mousePoint);
@@ -218,37 +212,7 @@ public class Player : MovingObject {
 		}
 	}
 
-	protected override void AttemptMove <T> (int xDir, int yDir) {
-		base.AttemptMove <T> (xDir, yDir);
-
-		RaycastHit2D hit;
-	}
-
-	protected override void OnCantMove <T> (T component) {
-		if (component != null && component.tag == "Wall") {
-			Wall hitWall = component as Wall;
-			hitWall.DamageWall (wallDamage);
-		}
-	}
-
-	public void DamagePlayer (int loss) {
-		currentHP -= loss;
-		CheckIfGameOver ();
-	}
-
-	private void MoveExecuted() {
-		playerScore++;
-
-		CheckIfGameOver ();
-
-		GameManager.instance.playersTurn = false;
-		turnStatusText.text = "Enemy Turn";
-	}
-
-	private void CheckIfGameOver() {
-		if (currentHP <= 0) {
-			//scoreText.text = "Stamina: 0/100. You can refill your stamina in the shop!";
-			GameManager.instance.GameOver ();
-		}
+	public void Damage (int damageTaken) {
+		currentHP -= damageTaken;
 	}
 }

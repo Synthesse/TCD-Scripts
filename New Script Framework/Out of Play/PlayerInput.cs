@@ -101,14 +101,11 @@ public class PlayerInput : MonoBehaviour {
 					gameObjectHit = hitCollider.gameObject;
 					gameObjectHit.SendMessage ("Select", SendMessageOptions.DontRequireReceiver);
 				} 
-
-
+					
 				if (hitCollider == null || (gameObjectHit != gameManager.selectedObject)) {
 					gameManager.DeselectObject ();
 
 				}
-
-				// Select object
 			}
 
 
@@ -119,11 +116,10 @@ public class PlayerInput : MonoBehaviour {
 			if (gameManager.buildMode) {
 				// Rotate object in build mode
 			} else if (gameManager.combatManager.targetingActive) {
-				Debug.Log ("Test");
 				gameManager.combatManager.DeactivateTargeting ();
 			} else if (gameManager.selectedObject != null) {
-				gameManager.selectedObject.SendMessage ("ExecuteMove", SendMessageOptions.DontRequireReceiver);
 				// Automove if object selected and AP > 0
+				gameManager.selectedObject.SendMessage ("ExecuteMove", SendMessageOptions.DontRequireReceiver);
 			}
 
 		}

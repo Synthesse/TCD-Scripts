@@ -101,8 +101,10 @@ public class CombatStateManager : MonoBehaviour {
 	}
 
 	public void ProcessHitTarget(GameObject hitTarget) {
-		gameManager.selectedObject.SendMessage (targetingMethodString, hitTarget);
-		DeactivateTargeting ();
+		if (targetedObjects.Contains (hitTarget)) {
+			gameManager.selectedObject.SendMessage (targetingMethodString, hitTarget);
+			DeactivateTargeting ();
+		}
 	}
 
 	public void StartNextTurn() {

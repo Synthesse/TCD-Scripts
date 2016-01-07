@@ -45,8 +45,8 @@ public interface ISelectable {
 	void Untarget ();
 }
 
-public interface IUnit : ISelectable, ILocateable, IKillable, IDamageable, IDisableable, IHinderable, IFlipable, IAbleToMove {
+public interface IUnit : IDamageable, IDisableable, IHinderable, IFlipable, IAbleToMove {
 }
 
-public interface IMachine : ISelectable, ILocateable, IKillable, IDamageable, IDisableable, IHinderable, IInteractable {
+public interface IMachine : IDamageable, IDisableable, IHinderable, IInteractable {
 }

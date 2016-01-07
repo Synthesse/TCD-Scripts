@@ -5,26 +5,17 @@ using Pathfinding;
 
 public class GameManager : MonoBehaviour {
 
-	public float turnDelay = 0.1f;
 	public static GameManager instance = null;
 	public BoardManager boardManager;
 	public PlayerInput playerInput;
 	public UIManager uiManager;
 	public BuildStateManager buildManager;
 	public CombatStateManager combatManager;
-	public bool combatMode = false;
 	public bool buildMode = false;
-	public bool gamePaused = false;
-	public bool playersTurn = true;
 	public long cash = 0;
 	public int waveNumber = 0;
 	public GameObject selectedObject;
-	public Player selectedUnit;
 	public bool targetingActive = false;
-
-
-	private List<Enemy> enemyList;
-	private bool enemiesMoving;
 
 
 	// Use this for initialization
@@ -35,7 +26,6 @@ public class GameManager : MonoBehaviour {
 			Destroy (gameObject);
 
 		DontDestroyOnLoad (gameObject);
-		enemyList = new List<Enemy> ();
 		uiManager = GetComponent<UIManager> ();
 		boardManager = GetComponent<BoardManager> ();
 		playerInput = GetComponent<PlayerInput> ();
@@ -44,15 +34,12 @@ public class GameManager : MonoBehaviour {
 		uiManager.Initialize ();
 		playerInput.Initialize ();
 
-
 		InitGame ();
 
 	}
 
 	void InitGame() {
-		
 		boardManager.SetupScene ();
-		selectedUnit = GameObject.FindGameObjectWithTag ("Player").GetComponent<Player> ();
 		selectedObject = null;
 	}
 
@@ -65,35 +52,7 @@ public class GameManager : MonoBehaviour {
 		enabled = false;
 	}
 
-	// Update is called once per frame
-	void Update () {
-		if (playersTurn || enemiesMoving)
-			return;
-
-		StartCoroutine (MoveEnemies ());
-	}
-
-	public void AddEnemyToList (Enemy script) {
-		enemyList.Add (script);
-	}
-
-	IEnumerator MoveEnemies() {
-		enemiesMoving = true;
-		yield return new WaitForSeconds (turnDelay);
-		if (enemyList.Count == 0) {
-			yield return new WaitForSeconds (turnDelay);
-		}
-
-		for (int i = 0; i < enemyList.Count; i++) {
-			enemyList [i].MoveEnemy ();
-			yield return new WaitForSeconds (enemyList[i].moveTime); 
-		}
-
-		playersTurn = true;
-		Player.instance.turnStatusText.text = "Player Turn";
-		enemiesMoving = false;
-	}
-
+	//Unused, until we have the ability to path through allies
 	public void ToggleColliders(string objectType, bool turnOn) {
 		List<GameObject> objectsToToggle;
 

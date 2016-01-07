@@ -20,7 +20,7 @@ public abstract class MovingObject : MonoBehaviour {
 	private float inverseMoveTime;
 	protected Color storedColor;
 	protected bool isSelected = false;
-	protected string unitName = "";
+	protected string objectName = "";
 	protected int numCombatActions = 3;
 
 	protected virtual void Start () {
@@ -100,7 +100,7 @@ public abstract class MovingObject : MonoBehaviour {
 		isSelected = true;
 		GameManager.instance.playerInput.currentMouseGridLoc = (Vector3) GridLocate ();
 		ScanPaths ();
-		UpdateUnitUIText ();
+		UpdateObjectUIText ();
 		GameManager.instance.uiManager.ToggleSelectedUnitUI (true, numCombatActions);
 	}
 
@@ -126,44 +126,13 @@ public abstract class MovingObject : MonoBehaviour {
 		GameManager.instance.combatManager.currentSideAPPool += currentAP;
 	}
 
-	protected virtual void UpdateUnitUIText () {
-		GameManager.instance.uiManager.UpdateNameText (unitName);
+	protected virtual void UpdateObjectUIText () {
+		GameManager.instance.uiManager.UpdateNameText (objectName);
 		GameManager.instance.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP);
 		GameManager.instance.uiManager.UpdateDetailsText (status, maxHP, atk, def, maxAP, special);
 	}
 
 	protected virtual void ProcessCombatPanelClick(int buttonNum) {
 	}
-
-	protected virtual void AttemptMove <T> (int xDir, int yDir) 
-		where T : Component {
-		RaycastHit2D hit;
-		bool canMove = Move (xDir, yDir, out hit);
-
-		if (hit.transform == null) 
-			return;
-
-		//if (hit.transform.tag == "Player") {
-			Player playerHitComponent = hit.transform.GetComponent<Player> ();
-		//} else if (hit.transform.tag == "Wall") {
-			Wall wallHitComponent = hit.transform.GetComponent<Wall> ();
-		//} else {
-			T hitComponent = hit.transform.GetComponent<T> ();
-		//}
-
-		if (!canMove) {
-			if (wallHitComponent != null)
-				OnCantMove (wallHitComponent);
-			else if (playerHitComponent != null)
-				OnCantMove (playerHitComponent);
-			else
-				OnCantMove (hitComponent);
-		}
-			
-			
-	}
-		
-	protected abstract void OnCantMove <T> (T component)
-		where T : Component;
 
 }
