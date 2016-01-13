@@ -14,6 +14,7 @@ public class CombatStateManager : MonoBehaviour {
 	public List<GameObject> activeAllies;
 	public List<GameObject> targetedObjects;
 	private int layerMask = 1 << 8;
+	public bool actionLock;
 
 
 	void Start () {
@@ -22,14 +23,19 @@ public class CombatStateManager : MonoBehaviour {
 
 	public void StartCombat () {
 		gameManager.DeselectObject ();
+		isPlayerTurn = true;
 		combatModeEnabled = true;
-		activeEnemies = new List<GameObject>(GameObject.FindGameObjectsWithTag ("Enemy"));
-		activeAllies = new List<GameObject>(GameObject.FindGameObjectsWithTag ("Player"));
+		gameManager.waveNumber++;
+		gameManager.uiManager.UpdateWaveNumberText ();
+		activeEnemies = CreateWave();
+		activeAllies = new List<GameObject>(GameObject.FindGameObjectsWithTag ("Ally"));
+		Debug.Log ("Active allies" + activeAllies.Count.ToString ());
 		gameManager.uiManager.ToggleCombatUI (true);
-		getAPPool ();
+		GetAPPool ();
 	}
 
 	void EndCombat () {
+		RefreshSideAP ();
 		gameManager.uiManager.ToggleCombatUI (false);
 		combatModeEnabled = false;
 		activeAllies.Clear ();
@@ -37,17 +43,63 @@ public class CombatStateManager : MonoBehaviour {
 		if (targetingActive)
 			DeactivateTargeting ();
 	}
+		
+	private void UpgradeWave (List<GameObject> waveList, int numUpgrades) {
+		for (int i = 0; i < numUpgrades; i++) {
+			int unitChoice = Random.Range (0, waveList.Count);
+			int statChoice = Random.Range (1, 5);
+			switch (statChoice) {
+			case 1:
+				waveList [unitChoice].GetComponent<Unit> ().atk++;
+				break;
+			case 2:
+				waveList [unitChoice].GetComponent<Unit> ().def++;
+				break;
+			case 3:
+				waveList [unitChoice].GetComponent<Unit> ().currentAP++;
+				waveList [unitChoice].GetComponent<Unit> ().maxAP++;
+				break;
+			case 4:
+				waveList [unitChoice].GetComponent<Unit> ().currentHP++;
+				waveList [unitChoice].GetComponent<Unit> ().maxHP++;
+				break;
+			}
+		}
+	}
 
-	private void getAPPool() {
+	private List<GameObject> CreateWave () {
+		int numEnemies = Mathf.RoundToInt (Mathf.Pow (gameManager.waveNumber, 0.67f));
+		int numUpgrades = Mathf.RoundToInt (gameManager.waveNumber / 1.5f);
+		gameManager.boardManager.DefaultWaveSpawn (numEnemies);
+		List<GameObject> waveList = new List<GameObject>(GameObject.FindGameObjectsWithTag ("Enemy"));
+		UpgradeWave (waveList, numUpgrades);
+		return waveList;
+	}
+
+	private void GetAPPool() {
 		currentSideAPPool = 0;
+		Debug.Log ("Getting AP Pool");
+		List<GameObject> iterList = GetActors (true);
+		foreach (GameObject actor in iterList) {
+			actor.GetComponent<Unit>().AddAPToPool();
+		}
+		Debug.Log (currentSideAPPool);
+	}
+
+	private void RefreshSideAP() {
+		List<GameObject> iterList = GetActors (true);
+		foreach (GameObject actor in iterList) {
+			actor.GetComponent<Unit>().ResetAP();
+		}
+	}
+
+	public List<GameObject> GetActors(bool getSameSide) {
 		List<GameObject> iterList;
-		if (isPlayerTurn)
+		if ((isPlayerTurn && getSameSide) || (!isPlayerTurn && !getSameSide))
 			iterList = activeAllies;
 		else
 			iterList = activeEnemies;
-		foreach (GameObject actor in iterList) {
-			actor.SendMessage ("AddAPToPool");
-		}
+		return iterList;
 	}
 
 	public void ActivateTargeting(string methodString) {
@@ -65,23 +117,32 @@ public class CombatStateManager : MonoBehaviour {
 		targetingMethodString = null;
 	}
 
-	private void FindTargets(GameObject source, bool targetEnemy) {
+	public void FindTargets(GameObject source, bool targetEnemy) {
 		string targetTag;
 		string passthruTag;
+		List<GameObject> potentialTargets;
 		if (targetEnemy) {
 			targetTag = "Enemy";
-			passthruTag = "Player";
+			passthruTag = "Ally";
+			potentialTargets = activeEnemies;
 		} else {
-			targetTag = "Player";
+			targetTag = "Ally";
 			passthruTag = "Enemy";
+			potentialTargets = activeAllies;
 		}
 
-		foreach (GameObject enemy in activeEnemies) {
+		foreach (GameObject potentialTarget in potentialTargets) {
 			RaycastHit2D[] hitArray;
-			hitArray = Physics2D.LinecastAll ((Vector2)source.transform.position, (Vector2)enemy.transform.position, layerMask);
+			hitArray = Physics2D.LinecastAll ((Vector2)source.transform.position, (Vector2)potentialTarget.transform.position, layerMask);
+			Debug.Log ("Number of hits: " + hitArray.Length);
 			foreach (RaycastHit2D hit in hitArray) {
+				Debug.Log ("Test Target Tag: " + (hit.transform.tag == targetTag));
+				Debug.Log (hit.transform.tag);
+				Debug.Log (targetTag);
+				Debug.Log ("Test Already in Array: " + !targetedObjects.Contains(hit.transform.gameObject));
 				if (hit.transform.tag == targetTag && !targetedObjects.Contains(hit.transform.gameObject)) {
-					hit.transform.gameObject.SendMessage ("Target");
+					if (isPlayerTurn)
+						hit.transform.gameObject.SendMessage ("Target");
 					targetedObjects.Add (hit.transform.gameObject);
 					break;
 				} else if (hit.transform.tag == passthruTag) {
@@ -93,9 +154,11 @@ public class CombatStateManager : MonoBehaviour {
 		}
 	}
 
-	private void ResetTargets() {
-		foreach (GameObject target in targetedObjects) {
-			target.SendMessage ("Untarget");
+	public void ResetTargets() {
+		if (isPlayerTurn) {
+			foreach (GameObject target in targetedObjects) {
+				target.SendMessage ("Untarget");
+			}
 		}
 		targetedObjects.Clear ();
 	}
@@ -109,14 +172,22 @@ public class CombatStateManager : MonoBehaviour {
 
 	public void StartNextTurn() {
 		//Temporary - use to proxy the attack button
-		if (gameManager.selectedObject != null && gameManager.selectedObject.tag == "Player") {
-			gameManager.selectedObject.SendMessage ("TargetTestAttack");
+		RefreshSideAP ();
+		gameManager.DeselectObject();
+		isPlayerTurn = (isPlayerTurn == true) ? false : true;
+		GetAPPool ();
+		if (!isPlayerTurn) {
+			gameManager.playerInput.enabled = false;
+			foreach (GameObject enemyGO in activeEnemies) {
+				enemyGO.GetComponent<Unit> ().EnableCombatAI ();
+			}
+			gameManager.playerInput.enabled = true;
 		}
 	}
 
 	// Update is called once per frame
 	void Update () {
-		if (combatModeEnabled) {
+		if (combatModeEnabled && !actionLock) {
 			if (activeEnemies.Count == 0) {
 				EndCombat ();
 			} else if (activeAllies.Count == 0) {

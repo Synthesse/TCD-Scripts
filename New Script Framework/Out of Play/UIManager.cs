@@ -11,6 +11,7 @@ public class UIManager : MonoBehaviour {
 	public Button startWaveButton;
 	public Button switchBuildMenusButton;
 	public Button nextTurnButton;
+	public Button restartGameButton;
 	public Toggle buildToggle;
 	public Toggle detailToggle;
 	public Text waveNumText;
@@ -19,6 +20,8 @@ public class UIManager : MonoBehaviour {
 	public Text selectedUnitText;
 	public Text vitalStatsText;
 	public Text buildNoteText;
+	public Text gameOverText;
+	public GameObject backdrop;
 
 	public GameObject detailPanel;
 	public GameObject buildPanel;
@@ -37,6 +40,7 @@ public class UIManager : MonoBehaviour {
 		startWaveButton = GameObject.Find ("startWaveButton").GetComponent<Button> ();
 		switchBuildMenusButton = GameObject.Find ("switchBuildMenusButton").GetComponent<Button> ();
 		nextTurnButton = GameObject.Find ("nextTurnButton").GetComponent<Button> ();
+		restartGameButton = GameObject.Find ("restartGameButton").GetComponent<Button> ();
 		buildToggle = GameObject.Find ("buildToggle").GetComponent<Toggle> ();
 		detailToggle = GameObject.Find ("detailToggle").GetComponent<Toggle> ();
 		waveNumText = GameObject.Find ("waveNumText").GetComponent<Text> ();
@@ -45,6 +49,8 @@ public class UIManager : MonoBehaviour {
 		selectedUnitText = GameObject.Find ("selectedUnitText").GetComponent<Text> ();
 		vitalStatsText = GameObject.Find ("vitalStatsText").GetComponent<Text> ();
 		buildNoteText = GameObject.Find ("buildNoteText").GetComponent<Text> ();
+		gameOverText = GameObject.Find ("gameOverText").GetComponent<Text> ();
+		backdrop = GameObject.Find ("backdrop");
 
 		detailPanel = GameObject.Find ("detailPanel");
 		buildPanel = GameObject.Find ("buildPanel");
@@ -68,6 +74,9 @@ public class UIManager : MonoBehaviour {
 		vitalStatsText.enabled = false;
 		buildNoteText.enabled = false;
 		pathRenderLine.enabled = false;
+		backdrop.SetActive (false);
+		gameOverText.enabled = false;
+		restartGameButton.gameObject.SetActive (false);
 
 	}
 
@@ -76,7 +85,7 @@ public class UIManager : MonoBehaviour {
 			selectedUnitText.enabled = true;
 			detailToggle.gameObject.SetActive (true);
 			vitalStatsText.enabled = true;
-			if (gameManager.combatManager.combatModeEnabled && gameManager.selectedObject.tag == "Player") {
+			if (gameManager.combatManager.combatModeEnabled && gameManager.selectedObject.tag == "Ally") {
 				combatPanel.SetActive (true);
 			}
 		} else {
@@ -91,7 +100,7 @@ public class UIManager : MonoBehaviour {
 	}
 
 	public void ToggleSelectedUnitUI(bool turnOn, int numCombatActions) {
-		if (gameManager.combatManager.combatModeEnabled && gameManager.selectedObject.tag == "Player") {
+		if (gameManager.combatManager.combatModeEnabled && gameManager.selectedObject.tag == "Ally") {
 			storedNumCombatActions = numCombatActions;
 			ToggleCombatPanelButtons ();
 		}
@@ -179,8 +188,8 @@ public class UIManager : MonoBehaviour {
 		}
 	}
 
-	public void UpdateCashText(long cash) {
-		cashText.text = "$" + cash;
+	public void UpdateCashText() {
+		cashText.text = "$" + gameManager.cash;
 	}
 		
 	public void UpdateNameText (string unitName) {
@@ -210,8 +219,8 @@ public class UIManager : MonoBehaviour {
 		detailPanel.GetComponentInChildren<Text> ().text = "Status: " + status + "\nHP: " + maxHP + "\nAtk: " + atk + "\nDef: " + def + "\nAP: " + maxAP + "\nSpecial: " + special;
 	}
 
-	public void UpdateWaveNumberText(int waveNum) {
-		waveNumText.text = "Wave " + waveNum;
+	public void UpdateWaveNumberText() {
+		waveNumText.text = "Wave " + gameManager.waveNumber;
 	}
 
 	public void ToggleTurnText(bool isPlayerTurn) {

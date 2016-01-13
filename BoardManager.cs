@@ -27,6 +27,7 @@ public class BoardManager : MonoBehaviour {
 	[HideInInspector] public Transform wallHolder;
 	public GameObject[,] combatBlockingArray;
 
+	private int layerMask = 1 << 8;
 	private Transform boardHolder;
 	private List <Vector2> gridPositions = new List<Vector2> ();
 
@@ -71,11 +72,12 @@ public class BoardManager : MonoBehaviour {
 		return randomPosition;
 	}
 
-	void LayoutObjectAtRandom (GameObject objectTile, bool requiresBuffer, bool addToCombatArray) {
+	private GameObject LayoutObjectAtRandom (GameObject objectTile, bool requiresBuffer, bool addToCombatArray) {
 		Vector2 randomPosition = RandomPosition (requiresBuffer);
 		GameObject objInstance = Instantiate (objectTile, randomPosition, Quaternion.identity) as GameObject;
 		if (addToCombatArray) 
 			combatBlockingArray [Mathf.RoundToInt(randomPosition.x), Mathf.RoundToInt(randomPosition.y)] = objInstance;
+		return objInstance;	
 	}
 
 	void LayoutObjectsAtRandom (GameObject[] tileArray, int minimum, int maximum, bool requiresBuffer, bool addToCombatArray) {
@@ -101,11 +103,42 @@ public class BoardManager : MonoBehaviour {
 		gridPositions.Clear ();
 	}
 
+	private bool ValidateInsideBounds(Vector2 vec2) {
+		return (vec2.x < columns && vec2.y < rows && vec2.x >= 0 && vec2.y >= 0);
+	}
+
+	public void DefaultWaveSpawn(int maxNumSpawns) {
+		SpawnObjectsAroundObject (GameObject.Find("elevator"), bufferSize, maxNumSpawns, enemyTiles);
+	}
+
+	private void SpawnObjectsAroundObject(GameObject objectToSpawnAround, int maxRadius, int maxNumSpawns, GameObject[] tileArray) {
+		int numSpawns = 0;
+		int locusX = Mathf.RoundToInt (objectToSpawnAround.transform.position.x);
+		int locusY = Mathf.RoundToInt (objectToSpawnAround.transform.position.y);
+		for (int i = 1; i <= maxRadius; i++) {
+			for (int j = -i; j <= i; j++) {
+				for (int k = -i; k <= i; k++) {
+					Vector2 placeLocation = new Vector2 (locusX + j, locusY + k);
+					if (numSpawns < maxNumSpawns && ValidateInsideBounds (placeLocation)) {
+						Collider2D hitCollider = Physics2D.OverlapPoint (placeLocation, layerMask);
+						if (hitCollider == null) {
+							GameObject tileChoice = tileArray [Random.Range (0, tileArray.Length)];
+							GameObject objInstance = Instantiate (tileChoice, placeLocation, Quaternion.identity) as GameObject;
+							numSpawns++;
+
+						}
+					}
+				}
+			}
+		}
+	}
+
 	public void SetupScene() {
 		BoardSetup ();
 		InitializeList ();
-		LayoutObjectsAtRandom (enemyTiles, 3, 7, false, true);
-		LayoutObjectAtRandom (enemySpawnPoint, true, true);
+		//LayoutObjectsAtRandom (enemyTiles, 1, 1, false, true);
+		GameObject enemySpawn = LayoutObjectAtRandom (enemySpawnPoint, true, true);
+		enemySpawn.name = "elevator";
 		LayoutObjectAtRandom (player, false, true);
 		FillRemainingSpaceWithWalls ();
 	}

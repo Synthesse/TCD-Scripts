@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class Loader : MonoBehaviour {
+public class GameLoader : MonoBehaviour {
 
 	public GameObject gameManager;
 

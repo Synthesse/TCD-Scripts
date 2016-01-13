@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using Pathfinding;
+using UnityEngine.SceneManagement;
 
 public class PlayerInput : MonoBehaviour {
 
@@ -30,6 +31,10 @@ public class PlayerInput : MonoBehaviour {
 		});
 		gameManager.uiManager.switchBuildMenusButton.onClick.AddListener (() => {
 			Debug.Log("Switch Build Menus!"); 
+		});
+		gameManager.uiManager.restartGameButton.onClick.AddListener (() => {
+			Destroy(GameObject.Find("PlayerPrefs"));
+			SceneManager.LoadScene ("Title Screen");
 		});
 
 		gameManager.uiManager.combatPanelButtons [0].onClick.AddListener (() => {

@@ -3,10 +3,15 @@ using System.Collections;
 
 public class Leader : Unit {
 
-	protected override void Start ()
+	protected override void Awake ()
 	{
-		base.Start ();
 		objectName = "Valerie";
+		currentHP = 20;
+		maxHP = 20;
+		currentAP = 6;
+		maxAP = 6;
+		atk = 6;
+		def = 2;
 	}
 
 	public override void Damage (int damageTaken)

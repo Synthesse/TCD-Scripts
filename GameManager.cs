@@ -25,7 +25,7 @@ public class GameManager : MonoBehaviour {
 		else if (instance != this)
 			Destroy (gameObject);
 
-		DontDestroyOnLoad (gameObject);
+		//DontDestroyOnLoad (gameObject);
 		uiManager = GetComponent<UIManager> ();
 		boardManager = GetComponent<BoardManager> ();
 		playerInput = GetComponent<PlayerInput> ();
@@ -49,7 +49,10 @@ public class GameManager : MonoBehaviour {
 	}
 
 	public void GameOver() {
-		enabled = false;
+		uiManager.backdrop.SetActive (true);
+		uiManager.gameOverText.text = "Game Over\nReached Wave " + waveNumber.ToString ();
+		uiManager.gameOverText.enabled = true;
+		uiManager.restartGameButton.gameObject.SetActive (true);
 	}
 
 	//Unused, until we have the ability to path through allies
@@ -60,7 +63,6 @@ public class GameManager : MonoBehaviour {
 			objectsToToggle = new List<GameObject>(GameObject.FindGameObjectsWithTag ("Enemy"));
 		} else if (objectType == "ally") {
 			objectsToToggle = new List<GameObject>(GameObject.FindGameObjectsWithTag ("Ally"));
-			objectsToToggle.Add (GameObject.FindGameObjectWithTag ("Player"));
 		} else
 			return;
 		
@@ -68,4 +70,5 @@ public class GameManager : MonoBehaviour {
 			toToggle.GetComponent<BoxCollider2D>().enabled = turnOn;
 		}
 	}
+
 }
