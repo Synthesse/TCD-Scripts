@@ -13,17 +13,24 @@ public abstract class Unit : SelectableObject {
 	public int maxAP;
 	public int atk;
 	public int def;
-	public int testStat {get; set;}
 	public string status = "Normal";
 	public string special = "Nothing";
 	protected Rigidbody2D rb2D;
 	public bool isAlly = true;
-	public bool nonlethalAmmo = false;
 
 	public Seeker seeker;
 	//private Path path;
 	private List<Vector3> storedPath;
 	private int storedPathCost = 666;
+
+	protected float inverseMoveTime;
+
+	protected Animator animator;
+	protected direction currentMovementDirection = direction.None;
+
+	protected List<Ability> abilityList;
+
+	public GameObject laserAttackObj;
 
 	// GENERAL METHODS
 	protected virtual void Awake () {
@@ -39,8 +46,14 @@ public abstract class Unit : SelectableObject {
 		base.Start ();
 		rb2D = GetComponent<Rigidbody2D>();
 		seeker = GetComponent<Seeker> ();
+		animator = GetComponent<Animator> ();
+		animator.enabled = false;
 		numCombatActions = 3;
 		storedPath = new List<Vector3> ();
+		abilityList = new List<Ability> ();
+		currentFacing = direction.Down;
+		currentFacing8 = direction8.None;
+		inverseMoveTime = 1f / 0.45f;
 	}
 
 	protected override void Select () {
@@ -53,7 +66,7 @@ public abstract class Unit : SelectableObject {
 		gameManager.uiManager.UnrenderPathLine (); 
 	}
 		
-	protected override void UpdateObjectUIText ()
+	public override void UpdateObjectUIText ()
 	{
 		base.UpdateObjectUIText ();
 		gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP);
@@ -66,7 +79,7 @@ public abstract class Unit : SelectableObject {
 	}
 
 	protected virtual void Update() {
-		if (isSelected && isAlly && currentAP > 0 && !GameManager.instance.combatManager.targetingActive)
+		if (!gameManager.playerInput.playerInputLock && isSelected && isAlly && currentAP > 0 && !GameManager.instance.combatManager.targetingActive)
 			CheckMousePath ();
 	}
 
@@ -116,20 +129,26 @@ public abstract class Unit : SelectableObject {
 		return Mathf.CeilToInt (runningCost/2f);
 	}
 
-	protected void ScanPaths () {
+	public void ScanPaths () {
 		boxCollider.enabled = false;
 		AstarPath.active.Scan ();
 		boxCollider.enabled = true;
 	}
 
-	protected void ExecuteMove () {
+	public IEnumerator ExecuteMove () {
 		if (isSelected && currentAP > 0 && storedPath.Count > 0) {
-			for (int i = 0; i < storedPath.Count; i++) {
-				this.transform.Translate (new Vector2 (storedPath [i].x - this.transform.position.x, storedPath [i].y - this.transform.position.y));
-			}
-
+			gameManager.playerInput.TogglePlayerInputLock (true);
+			gameManager.combatManager.ToggleActionLock (true);
 			DeductAP (storedPathCost);
+			List<Vector3> movementVertices = storedPath.GetRange (1, storedPath.Count-1);
 			ResetPath ();
+			yield return StartCoroutine (SmoothMovement (movementVertices));
+//			for (int i = 0; i < storedPath.Count; i++) {
+//				this.transform.Translate (new Vector2 (storedPath [i].x - this.transform.position.x, storedPath [i].y - this.transform.position.y));
+//			}
+//
+//			DeductAP (storedPathCost);
+//			ResetPath ();
 		}
 	}
 
@@ -142,6 +161,41 @@ public abstract class Unit : SelectableObject {
 		}
 	}
 
+
+
+	protected void AnimateMovement(direction mdir) {
+		if (!animator.enabled)
+			animator.enabled = true;
+		animator.SetTrigger ("walk"+mdir.ToString());
+	}
+
+	protected IEnumerator SmoothMovement (List<Vector3> movementList) {
+		direction currentDirection = direction.None;
+		for (int i = 0; i < movementList.Count; i++) {
+			direction newDirection = gameManager.boardManager.FindDirection (transform.position, movementList [i]);
+			if (newDirection != currentDirection) {
+				Debug.Log (newDirection);
+				AnimateMovement (newDirection);
+				currentDirection = newDirection;
+			}
+			float sqrRemainingDistance = ((Vector2)transform.position - (Vector2)movementList [i]).sqrMagnitude;
+
+			while (sqrRemainingDistance > float.Epsilon) {
+				Vector2 newPosition = Vector2.MoveTowards (rb2D.position, (Vector2)movementList [i], inverseMoveTime * Time.deltaTime);
+				this.transform.Translate (new Vector2 (newPosition.x - this.transform.position.x, newPosition.y - this.transform.position.y));
+				sqrRemainingDistance = ((Vector2)transform.position - (Vector2)movementList [i]).sqrMagnitude;
+				yield return null;
+			}
+		}
+
+
+		animator.SetTrigger ("stand");
+		animator.enabled = false;
+
+		ChangeFacing (currentDirection);
+		gameManager.playerInput.TogglePlayerInputLock(false);
+		gameManager.combatManager.ToggleActionLock (false);
+	}
 
 
 	// COMBAT METHODS
@@ -165,7 +219,7 @@ public abstract class Unit : SelectableObject {
 		gameObject.SetActive (false);
 	}
 
-	protected void DeductAP (int loss) {
+	public void DeductAP (int loss) {
 		if (gameManager.combatManager.combatModeEnabled) {
 			currentAP -= loss;
 			gameManager.combatManager.currentSideAPPool -= loss;
@@ -192,56 +246,72 @@ public abstract class Unit : SelectableObject {
 
 	// COMBAT AI METHODS
 
-	public virtual void EnableCombatAI() {
-		if (!gameManager.combatManager.actionLock) {
-			gameManager.combatManager.actionLock = true;
+	public virtual IEnumerator EnableCombatAI() {
+		if (!gameManager.combatManager.actionLock) { //Might have to remove this. Lots of weird coroutine/lock interactions
+			gameManager.combatManager.ToggleActionLock(true);
 			//Select ();
 			StorePathToNearest ();
-			int j = 0;
+			List<Vector3> movePath = new List<Vector3> ();
+			Vector3 currentLocation = this.transform.position;
 			while (currentAP > 0) {
 				gameManager.combatManager.FindTargets (gameObject, false);
 				Debug.Log ("Finding Targets: "+gameManager.combatManager.targetedObjects.Count);
 				if (gameManager.combatManager.targetedObjects.Count > 0 && currentAP > 1) {
+					if (movePath.Count > 0) {
+						gameManager.combatManager.ToggleActionLock (true);
+						yield return StartCoroutine (SmoothMovement (movePath));
+						movePath.Clear ();
+					}
 					Debug.Log ("Attacking");
-					ShittyTestAttack (gameManager.combatManager.targetedObjects [0]);
+					gameManager.combatManager.ToggleActionLock (true);
+					gameManager.playerInput.TogglePlayerInputLock (true);
+					yield return StartCoroutine(ShittyTestAttack (gameManager.combatManager.targetedObjects [0]));
 					gameManager.combatManager.ResetTargets ();
 					StorePathToNearest ();
 				} else {
 					if (storedPath.Count == 0) {
 						DeductAP (currentAP);
 					} else {
-						ExecuteNextAIMove ();
-						Debug.Log ("Moving");
+						currentLocation = ExecuteNextAIMove (currentLocation);
+						movePath.Add(currentLocation);
+						Debug.Log ("Moving to ");
 					}
 				}
+			}
+			if (movePath.Count > 0) {
+				gameManager.combatManager.ToggleActionLock (true);
+				yield return StartCoroutine (SmoothMovement (movePath));
+				movePath.Clear ();
 			}
 			//Deselect ();
 			storedPath.Clear ();
 			storedPathCost = 666;
-			gameManager.combatManager.actionLock = false;
+			gameManager.combatManager.ToggleActionLock(false);
 		}
 	}
 
-	protected virtual void ShittyTestAttack (GameObject target) {
-		target.SendMessage ("Target");
-		target.SendMessage ("Damage", atk);
-		target.SendMessage ("Untarget", SendMessageOptions.DontRequireReceiver);
-		DeductAP (2);
+	protected virtual IEnumerator ShittyTestAttack (GameObject target) {
+		Attack attack = new Attack ();
+		yield return StartCoroutine(attack.Execute (this, target));
+
 	}
 
-	protected void ExecuteNextAIMove () {
+	protected Vector3 ExecuteNextAIMove (Vector3 currentLocation) {
 		if (currentAP > 0) {
-			Vector2 nextMoveLocation = (Vector2) storedPath [0];
-			int pathCost = (int)(Mathf.Abs (nextMoveLocation.x - this.transform.position.x) + Mathf.Abs (nextMoveLocation.y - this.transform.position.y));
-			if (currentAP == 1 && pathCost == 2) {
-				this.transform.Translate(new Vector2(nextMoveLocation.x - this.transform.position.x, 0));
-				DeductAP (1);
-			} else {
-				this.transform.Translate(new Vector2(nextMoveLocation.x - this.transform.position.x, nextMoveLocation.y - this.transform.position.y));
-				DeductAP (pathCost);
-			}
+			Vector2 nextMoveLocation = (Vector2)storedPath [0];
+			int pathCost = (int)(Mathf.Abs (nextMoveLocation.x - currentLocation.x) + Mathf.Abs (nextMoveLocation.y - currentLocation.y));
 			storedPath.RemoveAt (0);
-		}
+			if (currentAP == 1 && pathCost == 2) {
+				DeductAP (1);
+//				return new Vector3 (nextMoveLocation.x - currentLocation.x, 0);
+				return new Vector3 (nextMoveLocation.x, currentLocation.y);
+			} else {
+				DeductAP (pathCost);
+//				return new Vector3 (nextMoveLocation.x - currentLocation.x, nextMoveLocation.y - currentLocation.y);
+				return new Vector3 (nextMoveLocation.x, nextMoveLocation.y);
+			}
+		} else
+			return currentLocation;
 	}
 
 	protected virtual void StorePathToNearest () {

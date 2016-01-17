@@ -9,12 +9,13 @@ public class CombatStateManager : MonoBehaviour {
 	public bool isPlayerTurn = true;
 	public bool targetingActive = false;
 	public int currentSideAPPool;
-	public string targetingMethodString = null;
+	public Ability targetingAbility = null;
 	public List<GameObject> activeEnemies;
 	public List<GameObject> activeAllies;
 	public List<GameObject> targetedObjects;
-	private int layerMask = 1 << 8;
+	private int layerMask = (1 << 8) | (1 << 9) ;
 	public bool actionLock;
+	public int actionLockThreads;
 
 
 	void Start () {
@@ -29,7 +30,6 @@ public class CombatStateManager : MonoBehaviour {
 		gameManager.uiManager.UpdateWaveNumberText ();
 		activeEnemies = CreateWave();
 		activeAllies = new List<GameObject>(GameObject.FindGameObjectsWithTag ("Ally"));
-		Debug.Log ("Active allies" + activeAllies.Count.ToString ());
 		gameManager.uiManager.ToggleCombatUI (true);
 		GetAPPool ();
 	}
@@ -78,18 +78,22 @@ public class CombatStateManager : MonoBehaviour {
 
 	private void GetAPPool() {
 		currentSideAPPool = 0;
-		Debug.Log ("Getting AP Pool");
 		List<GameObject> iterList = GetActors (true);
 		foreach (GameObject actor in iterList) {
-			actor.GetComponent<Unit>().AddAPToPool();
+			if (actor.GetComponent<Unit> () != null)
+				actor.GetComponent<Unit> ().AddAPToPool ();
+			else if (actor.GetComponent<Defenses> () != null)
+				actor.GetComponent<Defenses> ().AddAPToPool ();
 		}
-		Debug.Log (currentSideAPPool);
 	}
 
 	private void RefreshSideAP() {
 		List<GameObject> iterList = GetActors (true);
 		foreach (GameObject actor in iterList) {
-			actor.GetComponent<Unit>().ResetAP();
+			if (actor.GetComponent<Unit> () != null)
+				actor.GetComponent<Unit> ().ResetAP ();
+			else if (actor.GetComponent<Defenses> () != null)
+				actor.GetComponent<Defenses> ().ResetAP ();
 		}
 	}
 
@@ -102,11 +106,11 @@ public class CombatStateManager : MonoBehaviour {
 		return iterList;
 	}
 
-	public void ActivateTargeting(string methodString) {
+	public void ActivateTargeting(Ability ability) {
 		FindTargets (gameManager.selectedObject, true);
 		targetingActive = true;
 		gameManager.uiManager.ToggleCombatPanelButtons ();
-		targetingMethodString = methodString;
+		targetingAbility = ability;
 		gameManager.uiManager.UnrenderPathLine ();
 	}
 
@@ -114,7 +118,7 @@ public class CombatStateManager : MonoBehaviour {
 		ResetTargets ();
 		targetingActive = false;
 		gameManager.uiManager.ToggleCombatPanelButtons ();
-		targetingMethodString = null;
+		targetingAbility = null;
 	}
 
 	public void FindTargets(GameObject source, bool targetEnemy) {
@@ -134,12 +138,7 @@ public class CombatStateManager : MonoBehaviour {
 		foreach (GameObject potentialTarget in potentialTargets) {
 			RaycastHit2D[] hitArray;
 			hitArray = Physics2D.LinecastAll ((Vector2)source.transform.position, (Vector2)potentialTarget.transform.position, layerMask);
-			Debug.Log ("Number of hits: " + hitArray.Length);
 			foreach (RaycastHit2D hit in hitArray) {
-				Debug.Log ("Test Target Tag: " + (hit.transform.tag == targetTag));
-				Debug.Log (hit.transform.tag);
-				Debug.Log (targetTag);
-				Debug.Log ("Test Already in Array: " + !targetedObjects.Contains(hit.transform.gameObject));
 				if (hit.transform.tag == targetTag && !targetedObjects.Contains(hit.transform.gameObject)) {
 					if (isPlayerTurn)
 						hit.transform.gameObject.SendMessage ("Target");
@@ -165,9 +164,36 @@ public class CombatStateManager : MonoBehaviour {
 
 	public void ProcessHitTarget(GameObject hitTarget) {
 		if (targetedObjects.Contains (hitTarget)) {
-			gameManager.selectedObject.SendMessage (targetingMethodString, hitTarget);
-			DeactivateTargeting ();
+			gameManager.playerInput.TogglePlayerInputLock (true);
+			ToggleActionLock (true);
+			if (gameManager.selectedObject.GetComponent<Unit> () != null)
+				StartCoroutine (targetingAbility.Execute (gameManager.selectedObject.GetComponent<Unit> (), hitTarget));
+			else if (gameManager.selectedObject.GetComponent<Defenses> () != null)
+				StartCoroutine (targetingAbility.Execute (gameManager.selectedObject.GetComponent<Defenses> (), hitTarget));
 		}
+	}
+
+
+	public void ToggleActionLock(bool state) {
+		if (state) {
+			actionLockThreads++;
+		} else {
+			actionLockThreads--;
+		}
+		if (actionLockThreads > 0 && !actionLock) {
+			actionLock = true;
+		} else if (actionLockThreads <= 0 && actionLock) {
+			actionLock = false;
+			//actionLockThreads = 0;
+		}
+	}
+
+	private IEnumerator StartAICoroutines() {
+		gameManager.playerInput.TogglePlayerInputLock (true);
+		foreach (GameObject enemyGO in activeEnemies) {
+			yield return StartCoroutine (enemyGO.GetComponent<Unit> ().EnableCombatAI());
+		}
+		gameManager.playerInput.TogglePlayerInputLock (false);
 	}
 
 	public void StartNextTurn() {
@@ -177,11 +203,7 @@ public class CombatStateManager : MonoBehaviour {
 		isPlayerTurn = (isPlayerTurn == true) ? false : true;
 		GetAPPool ();
 		if (!isPlayerTurn) {
-			gameManager.playerInput.enabled = false;
-			foreach (GameObject enemyGO in activeEnemies) {
-				enemyGO.GetComponent<Unit> ().EnableCombatAI ();
-			}
-			gameManager.playerInput.enabled = true;
+			StartCoroutine (StartAICoroutines());
 		}
 	}
 
@@ -192,7 +214,7 @@ public class CombatStateManager : MonoBehaviour {
 				EndCombat ();
 			} else if (activeAllies.Count == 0) {
 				gameManager.GameOver ();
-			} else if (currentSideAPPool == 0) {
+			} else if (currentSideAPPool <= 0) {
 				StartNextTurn ();
 			}
 		}

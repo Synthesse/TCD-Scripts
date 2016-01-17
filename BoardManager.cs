@@ -3,6 +3,9 @@ using System;
 using System.Collections.Generic;
 using Random = UnityEngine.Random;
 
+public enum direction {Up, Right, Down, Left, None};
+public enum direction8 {Up, Right, Down, Left, UpLeft, UpRight, DownLeft, DownRight, None};
+
 public class BoardManager : MonoBehaviour {
 
 	[Serializable] public class Count {
@@ -103,7 +106,7 @@ public class BoardManager : MonoBehaviour {
 		gridPositions.Clear ();
 	}
 
-	private bool ValidateInsideBounds(Vector2 vec2) {
+	public bool ValidateInsideBounds(Vector2 vec2) {
 		return (vec2.x < columns && vec2.y < rows && vec2.x >= 0 && vec2.y >= 0);
 	}
 
@@ -142,4 +145,47 @@ public class BoardManager : MonoBehaviour {
 		LayoutObjectAtRandom (player, false, true);
 		FillRemainingSpaceWithWalls ();
 	}
+
+	public float FindAngle(Vector2 start, Vector2 end) {
+		int startX = Mathf.RoundToInt (start.x);
+		int startY = Mathf.RoundToInt (start.y);
+		int endX = Mathf.RoundToInt (end.x);
+		int endY = Mathf.RoundToInt (end.y);
+		float directionAngle = Mathf.Atan2 (endY - startY, endX - startX);
+		return directionAngle;
+	}
+
+	public direction FindDirection (Vector2 start, Vector2 end) {
+		float directionAngle = FindAngle (start, end);
+		//Note: atan goes from -pi to pi
+		if (directionAngle < Mathf.PI*-3f/4f || directionAngle > Mathf.PI*3f/4f )
+			return direction.Left;
+		else if (directionAngle <= Mathf.PI*-1f/4f)
+			return direction.Down;
+		else if (directionAngle < Mathf.PI*1f/4f)
+			return direction.Right;
+		else
+			return direction.Up;
+	}
+
+	public direction8 FindDirection8 (Vector2 start, Vector2 end) {
+		float directionAngle = FindAngle (start, end);
+		//Note: atan goes from -pi to pi
+		if (directionAngle <= Mathf.PI*-7f/8f || directionAngle >= Mathf.PI*7f/8f )
+			return direction8.Left;
+		else if (directionAngle < Mathf.PI*-5f/8f)
+			return direction8.DownLeft;
+		else if (directionAngle <= Mathf.PI*-3f/8f)
+			return direction8.Down;
+		else if (directionAngle < Mathf.PI*-1f/8f)
+			return direction8.DownRight;
+		else if (directionAngle <= Mathf.PI*1f/8f)
+			return direction8.Right;
+		else if (directionAngle < Mathf.PI*3f/8f)
+			return direction8.UpRight;
+		else if (directionAngle <= Mathf.PI*5f/8f)
+			return direction8.Up;
+		else
+			return direction8.UpLeft;
+	} 
 }

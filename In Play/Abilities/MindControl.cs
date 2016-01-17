@@ -1,9 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class Ability : MonoBehaviour {
-
-	int apCost;
+public class MindControl : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {

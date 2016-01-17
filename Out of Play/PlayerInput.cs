@@ -11,6 +11,8 @@ public class PlayerInput : MonoBehaviour {
 	public GameObject selectedObject;
 	public bool enableDrawMode = false;
 	public Vector3 currentMouseGridLoc;
+	public bool playerInputLock = false;
+	private int inputLockThreads = 0;
 
 	private GameManager gameManager;
 
@@ -48,6 +50,13 @@ public class PlayerInput : MonoBehaviour {
 			});
 		}
 
+		for (int i = 0; i < gameManager.uiManager.buildPanelButtons.Length; i++) {
+			int j = i;
+			gameManager.uiManager.buildPanelButtons [i].onClick.AddListener (() => {
+				gameManager.buildManager.ProcessBuildPanelClick(j);
+			});
+		}
+
 
 		gameManager.uiManager.buildToggle.onValueChanged.AddListener ((value) => {
 			ToggleBuildMode(value);
@@ -61,12 +70,12 @@ public class PlayerInput : MonoBehaviour {
 		if (turnOn) {
 			Debug.Log ("Enable Build Mode!");
 			gameManager.uiManager.ToggleBuildUI (true);
-			gameManager.buildMode = true;
+			gameManager.buildManager.buildModeEnabled = true;
 			gameManager.DeselectObject ();
 		} else {
 			Debug.Log ("Disable Build Mode!");
 			gameManager.uiManager.ToggleBuildUI (false);
-			gameManager.buildMode = false;
+			gameManager.buildManager.buildModeEnabled = false;
 		}
 	}
 
@@ -76,59 +85,74 @@ public class PlayerInput : MonoBehaviour {
 		return rayPoint;
 	}
 
-
+	public void TogglePlayerInputLock(bool state) {
+		if (state) {
+			inputLockThreads++;
+		} else {
+			inputLockThreads--;
+		}
+		if (inputLockThreads > 0 && !playerInputLock) {
+			playerInputLock = true;
+			gameManager.uiManager.blockInput.SetActive (true);
+		} else if (inputLockThreads <= 0 && playerInputLock) {
+			playerInputLock = false;
+			gameManager.uiManager.blockInput.SetActive (false);
+			inputLockThreads = 0;
+		}
+	}
 
 	// Update is called once per frame
 	void Update () {
 		if (Input.GetKeyDown("escape"))
 			Application.Quit();
-
-		if (Input.GetMouseButtonDown (0) && !EventSystem.current.IsPointerOverGameObject ()) {
-			if (gameManager.buildMode) {
-				//Place build object via BuildManager
-				GameObject tileChoice = gameManager.boardManager.wallTiles [Random.Range (0, gameManager.boardManager.wallTiles.Length)];
-				GameObject instance = Instantiate (tileChoice, GetMouseGridPosition(), Quaternion.identity) as GameObject;
-				instance.transform.SetParent (GameManager.instance.boardManager.wallHolder);
-			} else if (gameManager.combatManager.combatModeEnabled && gameManager.combatManager.targetingActive) {
-				// Confirm target selection during targeting
-				int layerMask = (1 << 8);
-				Collider2D hitCollider = Physics2D.OverlapPoint (GetMouseGridPosition(), layerMask);
-				if (hitCollider != null) {
-					gameManager.combatManager.ProcessHitTarget (hitCollider.gameObject);
-				} 
-			} else {
-				// Select/Deselect objects
-				int layerMask = (1 << 8) | (1 << 9);
-				Collider2D hitCollider = Physics2D.OverlapPoint (GetMouseGridPosition(), layerMask);
-				GameObject gameObjectHit = null;
-				if (hitCollider != null) {
-					gameManager.DeselectObject ();
-					gameObjectHit = hitCollider.gameObject;
-					gameObjectHit.SendMessage ("Select", SendMessageOptions.DontRequireReceiver);
-				} 
+		if (!playerInputLock) {
+			if (Input.GetMouseButtonDown (0) && !EventSystem.current.IsPointerOverGameObject ()) {
+				if (gameManager.buildManager.buildModeEnabled) {
+					//Place build object via BuildManager
+					GameObject tileChoice = gameManager.boardManager.wallTiles [Random.Range (0, gameManager.boardManager.wallTiles.Length)];
+					GameObject instance = Instantiate (tileChoice, GetMouseGridPosition (), Quaternion.identity) as GameObject;
+					instance.transform.SetParent (GameManager.instance.boardManager.wallHolder);
+				} else if (gameManager.combatManager.combatModeEnabled && gameManager.combatManager.targetingActive) {
+					// Confirm target selection during targeting
+					int layerMask = (1 << 8);
+					Collider2D hitCollider = Physics2D.OverlapPoint (GetMouseGridPosition (), layerMask);
+					if (hitCollider != null) {
+						gameManager.combatManager.ProcessHitTarget (hitCollider.gameObject);
+					} 
+				} else {
+					// Select/Deselect objects
+					int layerMask = (1 << 8) | (1 << 9) ;
+					Collider2D hitCollider = Physics2D.OverlapPoint (GetMouseGridPosition (), layerMask);
+					GameObject gameObjectHit = null;
+					if (hitCollider != null) {
+						gameManager.DeselectObject ();
+						gameObjectHit = hitCollider.gameObject;
+						gameObjectHit.SendMessage ("Select", SendMessageOptions.DontRequireReceiver);
+					} 
 					
-				if (hitCollider == null || (gameObjectHit != gameManager.selectedObject)) {
-					gameManager.DeselectObject ();
+					if (hitCollider == null || (gameObjectHit != gameManager.selectedObject)) {
+						gameManager.DeselectObject ();
 
+					}
 				}
+
+
+
 			}
 
+			if (Input.GetMouseButtonDown (1) && !EventSystem.current.IsPointerOverGameObject ()) {
+				if (gameManager.buildManager.buildModeEnabled) {
+					// Rotate object in build mode
+				} else if (gameManager.combatManager.targetingActive) {
+					gameManager.combatManager.DeactivateTargeting ();
+				} else if (gameManager.selectedObject != null && gameManager.selectedObject.GetComponent<Unit>() != null) {
+					// Automove if object selected and AP > 0
+					StartCoroutine(gameManager.selectedObject.GetComponent<Unit>().ExecuteMove());
+					//gameManager.selectedObject.SendMessage ("ExecuteMove", SendMessageOptions.DontRequireReceiver);
+				}
 
-
-		}
-
-		if (Input.GetMouseButtonDown (1) && !EventSystem.current.IsPointerOverGameObject ()) {
-			if (gameManager.buildMode) {
-				// Rotate object in build mode
-			} else if (gameManager.combatManager.targetingActive) {
-				gameManager.combatManager.DeactivateTargeting ();
-			} else if (gameManager.selectedObject != null) {
-				// Automove if object selected and AP > 0
-				gameManager.selectedObject.SendMessage ("ExecuteMove", SendMessageOptions.DontRequireReceiver);
 			}
-
 		}
-
 		//ADD SCROLL
 
 		//ADD CAMERA PAN

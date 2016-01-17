@@ -22,6 +22,7 @@ public class UIManager : MonoBehaviour {
 	public Text buildNoteText;
 	public Text gameOverText;
 	public GameObject backdrop;
+	public GameObject blockInput;
 
 	public GameObject detailPanel;
 	public GameObject buildPanel;
@@ -51,6 +52,7 @@ public class UIManager : MonoBehaviour {
 		buildNoteText = GameObject.Find ("buildNoteText").GetComponent<Text> ();
 		gameOverText = GameObject.Find ("gameOverText").GetComponent<Text> ();
 		backdrop = GameObject.Find ("backdrop");
+		blockInput = GameObject.Find ("blockInputImage");
 
 		detailPanel = GameObject.Find ("detailPanel");
 		buildPanel = GameObject.Find ("buildPanel");
@@ -77,6 +79,7 @@ public class UIManager : MonoBehaviour {
 		backdrop.SetActive (false);
 		gameOverText.enabled = false;
 		restartGameButton.gameObject.SetActive (false);
+		blockInput.SetActive (false);
 
 	}
 
