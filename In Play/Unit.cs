@@ -30,7 +30,6 @@ public abstract class Unit : SelectableObject {
 
 	protected List<Ability> abilityList;
 
-	public GameObject laserAttackObj;
 
 	// GENERAL METHODS
 	protected virtual void Awake () {
@@ -48,7 +47,7 @@ public abstract class Unit : SelectableObject {
 		seeker = GetComponent<Seeker> ();
 		animator = GetComponent<Animator> ();
 		animator.enabled = false;
-		numCombatActions = 3;
+		numCombatActions = 1;
 		storedPath = new List<Vector3> ();
 		abilityList = new List<Ability> ();
 		currentFacing = direction.Down;
@@ -239,6 +238,22 @@ public abstract class Unit : SelectableObject {
 	}
 		
 	protected virtual void ProcessCombatPanelClick(int buttonNum) {
+	}
+
+	public void Flip(bool isNowAlly) {
+		if (!isAlly && isNowAlly) {
+			isAlly = true;
+			gameObject.tag = "Ally";
+			gameManager.combatManager.activeEnemies.Remove (gameObject);
+			gameManager.combatManager.activeAllies.Add (gameObject);
+		} else if (isAlly && !isNowAlly) {
+			isAlly = false;
+			gameObject.tag = "Ally";
+			gameManager.combatManager.activeAllies.Remove (gameObject);
+			gameManager.combatManager.activeEnemies.Add (gameObject);
+		}
+		AddAPToPool ();
+		DeductAP (currentAP);
 	}
 
 

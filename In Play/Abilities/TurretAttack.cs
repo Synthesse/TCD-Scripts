@@ -18,7 +18,7 @@ public class TurretAttack : Ability {
 	public override IEnumerator Execute(Defenses self, GameObject target) {
 		self.DeductAP (apCost);
 		self.ChangeFacing(gameManager.boardManager.FindDirection8(self.transform.position, target.transform.position));
-		GameObject laser = GameObject.Instantiate(self.laserAttackObj, self.transform.position, Quaternion.Euler(0, 0, Mathf.Rad2Deg*(gameManager.boardManager.FindAngle(self.transform.position, target.transform.position)+Mathf.PI)+90)) as GameObject;
+		GameObject laser = GameObject.Instantiate(gameManager.combatManager.laserAttackObj, self.transform.position, Quaternion.Euler(0, 0, Mathf.Rad2Deg*(gameManager.boardManager.FindAngle(self.transform.position, target.transform.position)+Mathf.PI)+90)) as GameObject;
 		//		while (laser.activeInHierarchy)
 		//			yield return null;
 		yield return new WaitWhile(() => laser.activeInHierarchy);

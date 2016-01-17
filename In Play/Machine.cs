@@ -32,4 +32,16 @@ public abstract class Machine : SelectableObject {
 		gameManager.combatManager.targetedObjects.Remove (gameObject);
 		gameObject.SetActive (false);
 	}
+
+	public override void UpdateObjectUIText ()
+	{
+		base.UpdateObjectUIText ();
+		gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, 0, 0);
+		gameManager.uiManager.UpdateDetailsText (status, maxHP, 0, def, 0, "");
+	}
+
+	protected virtual void UpdateVitalsUIText() {
+		if (isSelected)
+			gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, 0, 0);
+	}
 }

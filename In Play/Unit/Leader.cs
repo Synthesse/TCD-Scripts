@@ -16,8 +16,10 @@ public class Leader : Unit {
 
 	protected override void Start() {
 		base.Start ();
+		numCombatActions = 3;
 		abilityList.Add (new Attack ());
 		abilityList.Add (new Defend ());
+		abilityList.Add (new MindControl ());
 //		Sprite testSprite = Resources.Load<Sprite> ("lead_researcher_transparent_1");
 //		directionalSprites.Add(testSprite);
 //		directionalSprites.Add(Resources.Load<Sprite> ("lead_researcher_transparent_4"));
@@ -54,6 +56,10 @@ public class Leader : Unit {
 		case 2:
 			//Defend
 			StartCoroutine(abilityList[1].Execute(this));
+			break;
+		case 3:
+			//MC
+			gameManager.combatManager.ActivateTargeting (abilityList [2]);
 			break;
 		default:
 			break;

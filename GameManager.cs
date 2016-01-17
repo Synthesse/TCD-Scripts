@@ -41,6 +41,8 @@ public class GameManager : MonoBehaviour {
 	void InitGame() {
 		boardManager.SetupScene ();
 		selectedObject = null;
+		cash += 10;
+		uiManager.UpdateCashText ();
 	}
 
 	public void DeselectObject() {

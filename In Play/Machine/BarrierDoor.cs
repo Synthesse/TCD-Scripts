@@ -5,7 +5,7 @@ public class BarrierDoor : Defenses {
 
 	public GameObject brokenVersion;
 	protected Animator animator;
-	private bool rotated = false;
+//	private bool rotated = false;
 
 	protected override void Awake () {
 		currentHP = 5;
@@ -21,7 +21,7 @@ public class BarrierDoor : Defenses {
 		base.Start ();
 		animator = GetComponent<Animator> ();
 		abilityList.Add(new DoorBarrierAbility());
-		numCombatActions = 2;
+		numCombatActions = 1;
 	}
 
 	protected override void Kill () {
@@ -37,20 +37,19 @@ public class BarrierDoor : Defenses {
 			StartCoroutine(abilityList[0].Execute(this));
 			break;
 		case 2:
-			Rotate ();
 			break;
 		default:
 			break;
 		}
 	}
 
-	public void Rotate () {
-		if (rotated) {
-			this.transform.Rotate (0, 0, -90);
-			rotated = false;
-		} else {
-			this.transform.Rotate (0, 0, 90);
-			rotated = true;
-		}
-	}
+//	public void Rotate () {
+//		if (rotated) {
+//			this.transform.Rotate (0, 0, -90);
+//			rotated = false;
+//		} else {
+//			this.transform.Rotate (0, 0, 90);
+//			rotated = true;
+//		}
+//	}
 }

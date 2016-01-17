@@ -17,6 +17,8 @@ public class CombatStateManager : MonoBehaviour {
 	public bool actionLock;
 	public int actionLockThreads;
 
+	public GameObject laserAttackObj;
+	public GameObject mindControlObj;
 
 	void Start () {
 		gameManager = GameManager.instance;

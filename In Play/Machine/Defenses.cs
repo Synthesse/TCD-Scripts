@@ -11,9 +11,6 @@ public abstract class Defenses : Machine {
 	public bool isAlly = true;
 	protected List<Ability> abilityList;
 
-	// TODO: move particle objects created to their respective child classes
-	public GameObject laserAttackObj;
-
 	protected override void Awake () {
 		currentHP = 1;
 		maxHP = 1;
@@ -37,7 +34,7 @@ public abstract class Defenses : Machine {
 		gameManager.uiManager.UpdateDetailsText (status, maxHP, atk, def, maxAP, special);
 	}
 
-	protected void UpdateVitalsUIText() {
+	protected override void UpdateVitalsUIText() {
 		if (isSelected)
 			gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP);
 	}

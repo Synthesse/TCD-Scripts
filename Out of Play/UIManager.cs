@@ -147,12 +147,12 @@ public class UIManager : MonoBehaviour {
 			startWaveButton.gameObject.SetActive (false);
 
 			buildPanel.SetActive(true);
-			switchBuildMenusButton.gameObject.SetActive (true);
-			buildNoteText.enabled = true;
+			//switchBuildMenusButton.gameObject.SetActive (true);
+			//buildNoteText.enabled = true;
 		} else {
 			buildPanel.SetActive(false);
-			switchBuildMenusButton.gameObject.SetActive (false);
-			buildNoteText.enabled = false;
+			//switchBuildMenusButton.gameObject.SetActive (false);
+			//buildNoteText.enabled = false;
 
 			startWaveButton.gameObject.SetActive (true);
 		}

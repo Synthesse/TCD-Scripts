@@ -14,15 +14,29 @@ public class BuildStateManager : MonoBehaviour {
 	private GameObject buildGhost;
 	private float xOffset = 0;
 	private float yOffset = 0;
-	private bool buildObjectSelected = false;
+	public bool buildObjectSelected = false;
 	private bool excavating = false;
 	private int cost;
 	private int layerMask = (1 << 8) | (1 << 9) ;
+	private bool rotated = false;
 
 	void Start() {
 		gameManager = GameManager.instance;
 		buildGhost = Instantiate (buildGhostPrefab) as GameObject;
 		buildGhost.SetActive (false);
+	}
+
+	public void ToggleBuildMode(bool turnOn) {
+		if (turnOn) {
+			gameManager.uiManager.ToggleBuildUI (true);
+			buildModeEnabled = true;
+			gameManager.DeselectObject ();
+		} else {
+			ClearBuildObject ();
+			buildGhost.SetActive (false);
+			gameManager.uiManager.ToggleBuildUI (false);
+			buildModeEnabled = false;
+		}
 	}
 
 	private void RenderBuildGhost() {
@@ -70,13 +84,14 @@ public class BuildStateManager : MonoBehaviour {
 		return false;
 	}
 
-	private void ClearBuildObject() {
+	public void ClearBuildObject() {
 		buildObjectSelected = false;
 		xOffset = 0;
 		yOffset = 0;
 		buildGhost.transform.localScale = new Vector3 (1, 1, 1);
 		excavating = false;
 		prefabToBuild = null;
+		gameManager.uiManager.switchBuildMenusButton.gameObject.SetActive (false);
 	}
 
 	public virtual void ProcessBuildPanelClick(int buttonNum) {
@@ -102,6 +117,7 @@ public class BuildStateManager : MonoBehaviour {
 			//Door
 			cost = 3;
 			yOffset = 0.5f;
+			gameManager.uiManager.switchBuildMenusButton.gameObject.SetActive (true);
 			buildGhost.transform.localScale -= new Vector3 (0.2F, 0.2F, 0);
 			break;
 		case 3:
@@ -117,7 +133,37 @@ public class BuildStateManager : MonoBehaviour {
 	}
 
 	public void BuildObject() {
+		if (buildObjectSelected && gameManager.boardManager.ValidateInsideBounds(buildGhost.transform.position) && gameManager.cash >= cost) {
+			if (excavating) {
+				if (ValidateExcavation (buildGhost.transform.position)) {
+					Collider2D hitCollider = Physics2D.OverlapPoint (buildGhost.transform.position, layerMask);
+					if (hitCollider != null && hitCollider.gameObject.tag == "Wall") {
+						Destroy (hitCollider.gameObject);
+						gameManager.cash -= cost;
+						gameManager.uiManager.UpdateCashText ();
+					}
+				}
+			} else {
+				if (ValidateBuildLocation (buildGhost.transform.position)) {
+					Instantiate (prefabToBuild, buildGhost.transform.position, buildGhost.transform.rotation);
+					gameManager.cash -= cost;
+					gameManager.uiManager.UpdateCashText ();
+				}
+			}
+		}
+	}
 
+	public void RotateBuildGhost() {
+		if (rotated) {
+			buildGhost.transform.Rotate (0, 0, -90);
+			rotated = false;
+		} else {
+			buildGhost.transform.Rotate (0, 0, 90);
+			rotated = true;
+		}
+		float temp = xOffset;
+		xOffset = yOffset;
+		yOffset = temp;
 	}
 
 	void Update() {

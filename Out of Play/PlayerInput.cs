@@ -32,7 +32,7 @@ public class PlayerInput : MonoBehaviour {
 			gameManager.combatManager.StartNextTurn();
 		});
 		gameManager.uiManager.switchBuildMenusButton.onClick.AddListener (() => {
-			Debug.Log("Switch Build Menus!"); 
+			gameManager.buildManager.RotateBuildGhost();
 		});
 		gameManager.uiManager.restartGameButton.onClick.AddListener (() => {
 			Destroy(GameObject.Find("PlayerPrefs"));
@@ -59,24 +59,11 @@ public class PlayerInput : MonoBehaviour {
 
 
 		gameManager.uiManager.buildToggle.onValueChanged.AddListener ((value) => {
-			ToggleBuildMode(value);
+			gameManager.buildManager.ToggleBuildMode(value);
 		});
 		gameManager.uiManager.detailToggle.onValueChanged.AddListener ((value) => {
 			gameManager.uiManager.ToggleUnitDetail(value);
 		});
-	}
-
-	void ToggleBuildMode(bool turnOn) {
-		if (turnOn) {
-			Debug.Log ("Enable Build Mode!");
-			gameManager.uiManager.ToggleBuildUI (true);
-			gameManager.buildManager.buildModeEnabled = true;
-			gameManager.DeselectObject ();
-		} else {
-			Debug.Log ("Disable Build Mode!");
-			gameManager.uiManager.ToggleBuildUI (false);
-			gameManager.buildManager.buildModeEnabled = false;
-		}
 	}
 
 	public Vector3 GetMouseGridPosition() {
@@ -107,11 +94,8 @@ public class PlayerInput : MonoBehaviour {
 			Application.Quit();
 		if (!playerInputLock) {
 			if (Input.GetMouseButtonDown (0) && !EventSystem.current.IsPointerOverGameObject ()) {
-				if (gameManager.buildManager.buildModeEnabled) {
-					//Place build object via BuildManager
-					GameObject tileChoice = gameManager.boardManager.wallTiles [Random.Range (0, gameManager.boardManager.wallTiles.Length)];
-					GameObject instance = Instantiate (tileChoice, GetMouseGridPosition (), Quaternion.identity) as GameObject;
-					instance.transform.SetParent (GameManager.instance.boardManager.wallHolder);
+				if (gameManager.buildManager.buildModeEnabled && gameManager.buildManager.buildObjectSelected) {
+					gameManager.buildManager.BuildObject ();
 				} else if (gameManager.combatManager.combatModeEnabled && gameManager.combatManager.targetingActive) {
 					// Confirm target selection during targeting
 					int layerMask = (1 << 8);
@@ -141,8 +125,8 @@ public class PlayerInput : MonoBehaviour {
 			}
 
 			if (Input.GetMouseButtonDown (1) && !EventSystem.current.IsPointerOverGameObject ()) {
-				if (gameManager.buildManager.buildModeEnabled) {
-					// Rotate object in build mode
+				if (gameManager.buildManager.buildModeEnabled && gameManager.buildManager.buildObjectSelected) {
+					gameManager.buildManager.ClearBuildObject ();
 				} else if (gameManager.combatManager.targetingActive) {
 					gameManager.combatManager.DeactivateTargeting ();
 				} else if (gameManager.selectedObject != null && gameManager.selectedObject.GetComponent<Unit>() != null) {

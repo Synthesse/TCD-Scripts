@@ -8,7 +8,7 @@ public abstract class Ability {
 	//TODO: add auto-decrement all ability cooldowns to turn start
 
 	protected abilityTargetingTypes targetType;
-	protected int apCost;
+	public int apCost;
 	protected int cooldown;
 	protected int range;
 	protected bool friendlyTarget;

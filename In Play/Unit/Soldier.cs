@@ -12,4 +12,20 @@ public class Soldier : Unit {
 		def = 1;
 		objectName = "Sans";
 	}
+
+	protected override void Start() {
+		base.Start ();
+		abilityList.Add (new Attack ());
+	}
+
+	protected override void ProcessCombatPanelClick (int buttonNum) {
+		switch (buttonNum) {
+		case 1:
+			//Target Attack
+			gameManager.combatManager.ActivateTargeting (abilityList [0]);
+			break;
+		default:
+			break;
+		}
+	}
 }
