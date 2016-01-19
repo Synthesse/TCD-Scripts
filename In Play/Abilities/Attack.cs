@@ -8,7 +8,7 @@ public class Attack : Ability {
 		cooldown = 0;
 		range = 666;
 		friendlyTarget = false;
-		abilityName = "Attack";
+		abilityName = "Shoot (2AP)";
 		abilityDescription = "Fires at a single enemy. Costs 2 AP. Deals damage = atk.";
 		keyPress = "a";
 		currentCooldown = 0;

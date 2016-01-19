@@ -1,7 +1,11 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class Leader : Unit {
+
+	public List<NeuralAmplifier> amplifiers;
+	public int numThralls;
 
 	protected override void Awake ()
 	{
@@ -12,13 +16,15 @@ public class Leader : Unit {
 		maxAP = 6;
 		atk = 6;
 		def = 2;
+		numThralls = 0;
+		special = "Controls Minds";
 	}
 
 	protected override void Start() {
 		base.Start ();
 		numCombatActions = 3;
 		abilityList.Add (new Attack ());
-		abilityList.Add (new Defend ());
+		abilityList.Add (new Inspire ());
 		abilityList.Add (new MindControl ());
 //		Sprite testSprite = Resources.Load<Sprite> ("lead_researcher_transparent_1");
 //		directionalSprites.Add(testSprite);
@@ -50,19 +56,33 @@ public class Leader : Unit {
 	protected override void ProcessCombatPanelClick (int buttonNum) {
 		switch (buttonNum) {
 		case 1:
-			//Target Attack
-			gameManager.combatManager.ActivateTargeting (abilityList [0]);
+			//Attack
+			if (abilityList [0].apCost <= currentAP)
+				gameManager.combatManager.ActivateTargeting (abilityList [0]);
 			break;
 		case 2:
-			//Defend
-			StartCoroutine(abilityList[1].Execute(this));
+			//Haste
+			if (abilityList [1].apCost <= currentAP)
+				gameManager.combatManager.ActivateTargeting (abilityList [1]);
 			break;
 		case 3:
 			//MC
-			gameManager.combatManager.ActivateTargeting (abilityList [2]);
+			if (abilityList [2].apCost <= currentAP)
+				gameManager.combatManager.ActivateTargeting (abilityList [2]);
 			break;
 		default:
 			break;
+		}
+	}
+
+	public void AddThrall(GameObject thrall) {
+		numThralls++;
+		foreach (NeuralAmplifier amp in amplifiers) {
+			if (amp.controlledUnit == null) {
+				amp.controlledUnit = thrall.GetComponent<Unit> ();
+				amp.animator.enabled = true;
+				break;
+			}
 		}
 	}
 }

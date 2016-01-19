@@ -10,7 +10,8 @@ public class Soldier : Unit {
 		maxAP = 4;
 		atk = 4;
 		def = 1;
-		objectName = "Sans";
+		objectName = "Soldier";
+		special = "Long Range";
 	}
 
 	protected override void Start() {

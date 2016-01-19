@@ -29,6 +29,9 @@ public abstract class Unit : SelectableObject {
 	protected direction currentMovementDirection = direction.None;
 
 	protected List<Ability> abilityList;
+	protected List<string> abilityTextList;
+
+	private int thrallIndex = -1;
 
 
 	// GENERAL METHODS
@@ -206,7 +209,7 @@ public abstract class Unit : SelectableObject {
 		}
 	}
 
-	protected virtual void Kill () {
+	public virtual void Kill () {
 		if (isAlly)
 			gameManager.combatManager.activeAllies.Remove (gameObject);
 		else { 
@@ -215,7 +218,9 @@ public abstract class Unit : SelectableObject {
 			gameManager.uiManager.UpdateCashText ();
 		}
 		gameManager.combatManager.targetedObjects.Remove (gameObject);
-		gameObject.SetActive (false);
+		if (thrallIndex >= 0)
+			FindObjectOfType<Leader> ().amplifiers [thrallIndex].Reset ();
+		Destroy (gameObject);
 	}
 
 	public void DeductAP (int loss) {
@@ -256,7 +261,11 @@ public abstract class Unit : SelectableObject {
 		DeductAP (currentAP);
 	}
 
-
+	public void BecomeThrall(int ind, bool isNowAlly) {
+		Flip (isNowAlly);
+		objectName += " Thrall";
+		thrallIndex = ind;
+	}
 
 
 	// COMBAT AI METHODS

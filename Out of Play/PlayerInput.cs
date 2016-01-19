@@ -15,8 +15,13 @@ public class PlayerInput : MonoBehaviour {
 	private int inputLockThreads = 0;
 
 	private GameManager gameManager;
+	private int screenWidth;
+	private int screenHeight;
+	private int layerMask = (1 << 8) | (1 << 9) ;
 
 	void Awake () {
+		screenWidth = Screen.width;
+		screenHeight = Screen.height;
 	}
 
 	// Use this for initialization
@@ -103,9 +108,9 @@ public class PlayerInput : MonoBehaviour {
 					if (hitCollider != null) {
 						gameManager.combatManager.ProcessHitTarget (hitCollider.gameObject);
 					} 
-				} else {
+				} else if (!gameManager.buildManager.buildModeEnabled){
 					// Select/Deselect objects
-					int layerMask = (1 << 8) | (1 << 9) ;
+
 					Collider2D hitCollider = Physics2D.OverlapPoint (GetMouseGridPosition (), layerMask);
 					GameObject gameObjectHit = null;
 					if (hitCollider != null) {
@@ -129,17 +134,45 @@ public class PlayerInput : MonoBehaviour {
 					gameManager.buildManager.ClearBuildObject ();
 				} else if (gameManager.combatManager.targetingActive) {
 					gameManager.combatManager.DeactivateTargeting ();
-				} else if (gameManager.selectedObject != null && gameManager.selectedObject.GetComponent<Unit>() != null) {
+				} else if (gameManager.selectedObject != null && gameManager.selectedObject.GetComponent<Unit> () != null && gameManager.selectedObject.GetComponent<Unit> ().currentAP > 0) {
 					// Automove if object selected and AP > 0
-					StartCoroutine(gameManager.selectedObject.GetComponent<Unit>().ExecuteMove());
+					StartCoroutine (gameManager.selectedObject.GetComponent<Unit> ().ExecuteMove ());
 					//gameManager.selectedObject.SendMessage ("ExecuteMove", SendMessageOptions.DontRequireReceiver);
+				} else if (gameManager.selectedObject == null && gameManager.combatManager.combatModeEnabled) {
+					Collider2D[] hitColliders = Physics2D.OverlapPointAll (GetMouseGridPosition (), layerMask);
+					if (hitColliders.Length == 2) {
+						gameManager.DeselectObject ();
+						hitColliders[1].gameObject.SendMessage ("Select", SendMessageOptions.DontRequireReceiver);
+					}
+				} else if (gameManager.selectedObject != null) {
+					gameManager.DeselectObject ();
 				}
-
 			}
-		}
-		//ADD SCROLL
 
-		//ADD CAMERA PAN
+			//PAN
+			//if (Input.GetKey ("left") || Input.mousePosition.x <= 0) {
+			if (Input.GetKey ("left")) {
+				Camera.main.transform.position += new Vector3(Time.deltaTime*-9f,0,0);
+			//} else if (Input.GetKey ("right") || Input.mousePosition.x >= screenWidth - 1)
+			} else if (Input.GetKey ("right"))
+				Camera.main.transform.position += new Vector3(Time.deltaTime*9f,0,0);
+
+			//if (Input.GetKey ("up") || Input.mousePosition.y >= screenHeight-1) {
+			if (Input.GetKey ("up")) {
+				Camera.main.transform.position += new Vector3(0,Time.deltaTime*9f,0);
+			//} else if (Input.GetKey ("down") || Input.mousePosition.y <= 0)
+			} else if (Input.GetKey ("down"))
+				Camera.main.transform.position += new Vector3(0,Time.deltaTime*-9f,0);
+
+			//ZOOM
+			if (Input.GetAxis ("Mouse ScrollWheel") < 0f && Camera.main.orthographicSize < 40f) {
+				Camera.main.orthographicSize += 1f;
+			} else if (Input.GetAxis ("Mouse ScrollWheel") > 0f && Camera.main.orthographicSize > 1f) {
+				Camera.main.orthographicSize -= 1f;
+			}
+
+
+		}
 
 		/*if (Input.GetKeyDown ("d")) {
 			if (enableDrawMode)

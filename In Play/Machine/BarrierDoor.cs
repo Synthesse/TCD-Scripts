@@ -5,7 +5,6 @@ public class BarrierDoor : Defenses {
 
 	public GameObject brokenVersion;
 	protected Animator animator;
-//	private bool rotated = false;
 
 	protected override void Awake () {
 		currentHP = 5;
@@ -22,9 +21,10 @@ public class BarrierDoor : Defenses {
 		animator = GetComponent<Animator> ();
 		abilityList.Add(new DoorBarrierAbility());
 		numCombatActions = 1;
+		attackable = false;
 	}
 
-	protected override void Kill () {
+	public override void Kill () {
 		base.Kill();
 		//Instantiate (brokenVersion, this.transform.position, this.transform.rotation);
 	}

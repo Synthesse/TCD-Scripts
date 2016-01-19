@@ -226,6 +226,10 @@ public class UIManager : MonoBehaviour {
 		waveNumText.text = "Wave " + gameManager.waveNumber;
 	}
 
+	public void UpdateNeuralBuildButtonText(int cost) {
+		buildPanelButtons [5].GetComponentInChildren<Text> ().text = "Neural Amplifier ($" + cost.ToString() + ")"; 
+	}
+
 	public void ToggleTurnText(bool isPlayerTurn) {
 		if (isPlayerTurn) {
 			turnStatusText.text = "Player Turn";
@@ -242,7 +246,11 @@ public class UIManager : MonoBehaviour {
 		for (int i = 0; i < pathList.Count; i++) {
 			pathArray [i] = new Vector3 (pathList [i].x, pathList [i].y, pathList [i].z - 0.5f);
 		}
-	pathRenderLine.SetPositions (pathArray);
+		pathRenderLine.SetPositions (pathArray);
+	}
+
+	public void UpdateCombatPanelButtonText(List<int> buttonNums, List<string> text) {
+
 	}
 
 	public void UnrenderPathLine() {

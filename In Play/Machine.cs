@@ -28,9 +28,9 @@ public abstract class Machine : SelectableObject {
 		}
 	}
 
-	protected virtual void Kill () {
+	public virtual void Kill () {
 		gameManager.combatManager.targetedObjects.Remove (gameObject);
-		gameObject.SetActive (false);
+		Destroy (gameObject);
 	}
 
 	public override void UpdateObjectUIText ()

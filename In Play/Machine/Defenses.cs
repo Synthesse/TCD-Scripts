@@ -49,14 +49,14 @@ public abstract class Defenses : Machine {
 		}
 	}
 
-	protected override void Kill () {
+	public override void Kill () {
 		if (isAlly)
 			gameManager.combatManager.activeAllies.Remove (gameObject);
 		else { 
 			gameManager.combatManager.activeEnemies.Remove (gameObject);
 		}
 		gameManager.combatManager.targetedObjects.Remove (gameObject);
-		gameObject.SetActive (false);
+		Destroy (gameObject);
 	}
 
 	public void DeductAP (int loss) {

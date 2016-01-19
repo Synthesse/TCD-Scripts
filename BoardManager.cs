@@ -5,6 +5,7 @@ using Random = UnityEngine.Random;
 
 public enum direction {Up, Right, Down, Left, None};
 public enum direction8 {Up, Right, Down, Left, UpLeft, UpRight, DownLeft, DownRight, None};
+public enum corner {UpLeft, UpRight, DownLeft, DownRight};
 
 public class BoardManager : MonoBehaviour {
 
@@ -18,17 +19,21 @@ public class BoardManager : MonoBehaviour {
 		}
 	}
 
-	public int columns = 20;
-	public int rows = 10;
+	public int columns;
+	public int rows;
 	public int bufferSize = 2;
 	public GameObject enemySpawnPoint;
 	public GameObject player;
 	public GameObject[] enemyTiles;
 	public GameObject[] floorTiles;
-	public GameObject[] wallTiles;
 	public GameObject[] indestructibleWallTiles;
 	[HideInInspector] public Transform wallHolder;
 	public GameObject[,] combatBlockingArray;
+
+	public Sprite[] wallSprites;
+	public GameObject megaWallPrefab;
+	public GameObject wallPrefab;
+	public GameObject warpPoint;
 
 	private int layerMask = 1 << 8;
 	private Transform boardHolder;
@@ -46,19 +51,42 @@ public class BoardManager : MonoBehaviour {
 		}
 	}
 
-	void BoardSetup () {
-		boardHolder = new GameObject ("Board").transform;
-		wallHolder = new GameObject ("Walls").transform;
-		for (int x = -1; x < columns + 1; x++) {
-			for (int y = -1; y < rows + 1; y++) {
-				GameObject toInstantiate = floorTiles [Random.Range (0, floorTiles.Length)];
-				if (x == -1 || x == columns || y == -1 || y == rows)
-					toInstantiate = indestructibleWallTiles [0];
+	void BoardSetup (bool fixedStart) {
+		if (fixedStart) {
 
-				GameObject instance = Instantiate (toInstantiate, new Vector2 (x, y), Quaternion.identity) as GameObject;
+		} else {
+//			for (int x = (int)randomPosition.x - bufferSize; x < (int)randomPosition.x + bufferSize + 1; x++) {
+//				for (int y = (int)randomPosition.y - bufferSize; y < (int)randomPosition.y + bufferSize + 1; y++) {
+//					gridPositions.Remove (new Vector2 (x, y));
+//				}
+//			}
 
-				instance.transform.SetParent (boardHolder);
+			Vector2 spawnLocation = new Vector2 (Random.Range (bufferSize+1, columns - (bufferSize+2)), Random.Range (bufferSize, rows - (bufferSize+2)));
+			boardHolder = new GameObject ("Board").transform;
+			wallHolder = new GameObject ("Walls").transform;
+			for (int x = -1; x < columns + 1; x++) {
+				for (int y = -1; y < rows + 1; y++) {
+					GameObject toInstantiate;
+					if (x == -1 || x == columns || y == -1 || y == rows)
+						toInstantiate = indestructibleWallTiles [0];
+					else if (x <= spawnLocation.x + (bufferSize+1) && x >= spawnLocation.x - (bufferSize+1) && y <= spawnLocation.y + (bufferSize+1) && y >= spawnLocation.y - (bufferSize+1)) {
+						gridPositions.Remove (new Vector2 (x, y));
+						if (x <= spawnLocation.x + bufferSize && x >= spawnLocation.x - bufferSize && y <= spawnLocation.y + bufferSize && y >= spawnLocation.y - bufferSize)
+							toInstantiate = warpPoint;
+						else 
+							toInstantiate = floorTiles [Random.Range (0, floorTiles.Length)];
+					} else 
+						toInstantiate = floorTiles [Random.Range (0, floorTiles.Length)];
+					
+
+					GameObject instance = Instantiate (toInstantiate, new Vector2 (x, y), Quaternion.identity) as GameObject;
+					instance.transform.SetParent (boardHolder);
+				}
 			}
+			GameObject objInstance = Instantiate (enemySpawnPoint, spawnLocation, Quaternion.identity) as GameObject;
+			objInstance.name = "elevator";
+			Instantiate (player, spawnLocation - new Vector2(1,1), Quaternion.identity);
+			//Camera.main.transform.position = new Vector3 (spawnLocation.x, spawnLocation.y, -20);
 		}
 	}
 
@@ -94,11 +122,22 @@ public class BoardManager : MonoBehaviour {
 		}
 	}
 
+//	void FillRemainingSpaceWithWalls () {
+//		for (int i = 0; i < gridPositions.Count; i++) {
+//			if (Random.value > 0.7) {
+//				GameObject tileChoice = wallTiles [Random.Range (0, wallTiles.Length)];
+//				GameObject instance = Instantiate (tileChoice, gridPositions [i], Quaternion.identity) as GameObject;
+//				instance.transform.SetParent (wallHolder);
+//				combatBlockingArray [Mathf.RoundToInt(gridPositions [i].x), Mathf.RoundToInt(gridPositions [i].y)] = instance;
+//			}
+//		}
+//		gridPositions.Clear ();
+//	}
+
 	void FillRemainingSpaceWithWalls () {
 		for (int i = 0; i < gridPositions.Count; i++) {
-			if (Random.value > 0.7) {
-				GameObject tileChoice = wallTiles [Random.Range (0, wallTiles.Length)];
-				GameObject instance = Instantiate (tileChoice, gridPositions [i], Quaternion.identity) as GameObject;
+			if (Random.value >= 0) {
+				GameObject instance = Instantiate (megaWallPrefab, gridPositions [i], Quaternion.identity) as GameObject;
 				instance.transform.SetParent (wallHolder);
 				combatBlockingArray [Mathf.RoundToInt(gridPositions [i].x), Mathf.RoundToInt(gridPositions [i].y)] = instance;
 			}
@@ -137,13 +176,12 @@ public class BoardManager : MonoBehaviour {
 	}
 
 	public void SetupScene() {
-		BoardSetup ();
 		InitializeList ();
-		//LayoutObjectsAtRandom (enemyTiles, 1, 1, false, true);
-		GameObject enemySpawn = LayoutObjectAtRandom (enemySpawnPoint, true, true);
-		enemySpawn.name = "elevator";
-		LayoutObjectAtRandom (player, false, true);
-		FillRemainingSpaceWithWalls ();
+		BoardSetup (false);
+		//FillRemainingSpaceWithWalls ();
+		for (int i = 0; i < wallHolder.childCount; i++) {
+			wallHolder.GetChild (i).GetComponent<MegaWall> ().FindNeighbors ();
+		}
 	}
 
 	public float FindAngle(Vector2 start, Vector2 end) {

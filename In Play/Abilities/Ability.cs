@@ -11,7 +11,7 @@ public abstract class Ability {
 	public int apCost;
 	protected int cooldown;
 	protected int range;
-	protected bool friendlyTarget;
+	public bool friendlyTarget;
 	protected string abilityName;
 	protected string abilityDescription;
 	protected string keyPress;

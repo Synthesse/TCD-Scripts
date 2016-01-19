@@ -33,7 +33,6 @@ public class GameManager : MonoBehaviour {
 		buildManager = GetComponent<BuildStateManager> ();
 		uiManager.Initialize ();
 		playerInput.Initialize ();
-
 		InitGame ();
 
 	}
@@ -41,8 +40,12 @@ public class GameManager : MonoBehaviour {
 	void InitGame() {
 		boardManager.SetupScene ();
 		selectedObject = null;
-		cash += 10;
+		cash += 100;
 		uiManager.UpdateCashText ();
+	}
+
+	void Start() {
+		AstarPath.active.Scan ();
 	}
 
 	public void DeselectObject() {

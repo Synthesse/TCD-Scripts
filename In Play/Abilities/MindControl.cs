@@ -24,7 +24,8 @@ public class MindControl : Ability {
 		GameObject mcObj2 = GameObject.Instantiate (gameManager.combatManager.mindControlObj, target.transform.position, target.transform.rotation) as GameObject;
 		yield return new WaitForSeconds (1.5f);
 		GameObject.Destroy (mcObj2);
-		target.GetComponent<Unit> ().Flip (self.isAlly);
+		target.GetComponent<Unit> ().BecomeThrall (self.GetComponent<Leader> ().numThralls, self.isAlly);
+		self.GetComponent<Leader> ().AddThrall (target);
 		gameManager.combatManager.DeactivateTargeting ();
 		gameManager.playerInput.TogglePlayerInputLock (false);
 		gameManager.combatManager.ToggleActionLock (false);

@@ -8,17 +8,19 @@ public abstract class SelectableObject : PhysicalObject {
 
 	protected bool isSelected = false;
 	protected Color storedColor;
-	protected string objectName = "";
+	public string objectName = "";
 	protected int numCombatActions = 0;
 
 	protected direction currentFacing;
 	protected direction8 currentFacing8;
 	protected SpriteRenderer spriteRenderer;
+	public bool attackable;
 	public List<Sprite> directionalSprites;
 
 	// Use this for initialization
 	protected override void Start () {
 		base.Start ();
+		attackable = true;
 		spriteRenderer = gameObject.GetComponent<SpriteRenderer> ();
 		storedColor = spriteRenderer.color;
 	}

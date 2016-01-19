@@ -19,6 +19,8 @@ public class CombatStateManager : MonoBehaviour {
 
 	public GameObject laserAttackObj;
 	public GameObject mindControlObj;
+	public GameObject magicEffectObj;
+	public GameObject explosionObj;
 
 	void Start () {
 		gameManager = GameManager.instance;
@@ -109,7 +111,7 @@ public class CombatStateManager : MonoBehaviour {
 	}
 
 	public void ActivateTargeting(Ability ability) {
-		FindTargets (gameManager.selectedObject, true);
+		FindTargets (gameManager.selectedObject, !ability.friendlyTarget);
 		targetingActive = true;
 		gameManager.uiManager.ToggleCombatPanelButtons ();
 		targetingAbility = ability;
@@ -137,6 +139,9 @@ public class CombatStateManager : MonoBehaviour {
 			potentialTargets = activeAllies;
 		}
 
+		BoxCollider2D bc2d = source.GetComponent<BoxCollider2D> ();
+		if (bc2d != null)
+			bc2d.enabled = false;
 		foreach (GameObject potentialTarget in potentialTargets) {
 			RaycastHit2D[] hitArray;
 			hitArray = Physics2D.LinecastAll ((Vector2)source.transform.position, (Vector2)potentialTarget.transform.position, layerMask);
@@ -153,6 +158,8 @@ public class CombatStateManager : MonoBehaviour {
 				}
 			}
 		}
+		if (bc2d != null)
+			bc2d.enabled = true;
 	}
 
 	public void ResetTargets() {
@@ -203,6 +210,7 @@ public class CombatStateManager : MonoBehaviour {
 		RefreshSideAP ();
 		gameManager.DeselectObject();
 		isPlayerTurn = (isPlayerTurn == true) ? false : true;
+		gameManager.uiManager.ToggleTurnText (isPlayerTurn);
 		GetAPPool ();
 		if (!isPlayerTurn) {
 			StartCoroutine (StartAICoroutines());

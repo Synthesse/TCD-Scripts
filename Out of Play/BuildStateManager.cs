@@ -19,11 +19,13 @@ public class BuildStateManager : MonoBehaviour {
 	private int cost;
 	private int layerMask = (1 << 8) | (1 << 9) ;
 	private bool rotated = false;
+	public int neuralBuildCost;
 
 	void Start() {
 		gameManager = GameManager.instance;
 		buildGhost = Instantiate (buildGhostPrefab) as GameObject;
 		buildGhost.SetActive (false);
+		neuralBuildCost = 1;
 	}
 
 	public void ToggleBuildMode(bool turnOn) {
@@ -33,7 +35,6 @@ public class BuildStateManager : MonoBehaviour {
 			gameManager.DeselectObject ();
 		} else {
 			ClearBuildObject ();
-			buildGhost.SetActive (false);
 			gameManager.uiManager.ToggleBuildUI (false);
 			buildModeEnabled = false;
 		}
@@ -91,6 +92,7 @@ public class BuildStateManager : MonoBehaviour {
 		buildGhost.transform.localScale = new Vector3 (1, 1, 1);
 		excavating = false;
 		prefabToBuild = null;
+		buildGhost.SetActive (false);
 		gameManager.uiManager.switchBuildMenusButton.gameObject.SetActive (false);
 	}
 
@@ -111,21 +113,27 @@ public class BuildStateManager : MonoBehaviour {
 			break;
 		case 1:
 			//Turret
-			cost = 2;
+			cost = 15;
 			break;
 		case 2:
 			//Door
-			cost = 3;
+			cost = 10;
 			yOffset = 0.5f;
 			gameManager.uiManager.switchBuildMenusButton.gameObject.SetActive (true);
 			buildGhost.transform.localScale -= new Vector3 (0.2F, 0.2F, 0);
 			break;
 		case 3:
 			//Lab Machine
-			cost = 5;
+			cost = 50;
 			xOffset = 0.5f;
 			yOffset = 0.5f;
 			buildGhost.transform.localScale -= new Vector3 (0, 0.3F, 0);
+			break;
+		case 4:
+			cost = 10;
+			break;
+		case 5:
+			cost = neuralBuildCost;
 			break;
 		default:
 			break;
@@ -138,7 +146,7 @@ public class BuildStateManager : MonoBehaviour {
 				if (ValidateExcavation (buildGhost.transform.position)) {
 					Collider2D hitCollider = Physics2D.OverlapPoint (buildGhost.transform.position, layerMask);
 					if (hitCollider != null && hitCollider.gameObject.tag == "Wall") {
-						Destroy (hitCollider.gameObject);
+						hitCollider.gameObject.transform.parent.GetComponent<MegaWall>().Kill();
 						gameManager.cash -= cost;
 						gameManager.uiManager.UpdateCashText ();
 					}
@@ -151,6 +159,12 @@ public class BuildStateManager : MonoBehaviour {
 				}
 			}
 		}
+	}
+
+	public void UpdateNeuralBuildCost() {
+		neuralBuildCost = (int)Mathf.Pow (10, FindObjectOfType<Leader> ().amplifiers.Count);
+		cost = neuralBuildCost;
+		gameManager.uiManager.UpdateNeuralBuildButtonText (neuralBuildCost);
 	}
 
 	public void RotateBuildGhost() {
