@@ -17,7 +17,7 @@ public class BuildStateManager : MonoBehaviour {
 	public bool buildObjectSelected = false;
 	private bool excavating = false;
 	private int cost;
-	private int layerMask = (1 << 8) | (1 << 9) ;
+	private int layerMask = (1 << 8) | (1 << 9) | (1 << 10);
 	private bool rotated = false;
 	public int neuralBuildCost;
 
@@ -91,6 +91,8 @@ public class BuildStateManager : MonoBehaviour {
 		yOffset = 0;
 		buildGhost.transform.localScale = new Vector3 (1, 1, 1);
 		excavating = false;
+		if (rotated)
+			RotateBuildGhost ();
 		prefabToBuild = null;
 		buildGhost.SetActive (false);
 		gameManager.uiManager.switchBuildMenusButton.gameObject.SetActive (false);
@@ -146,6 +148,7 @@ public class BuildStateManager : MonoBehaviour {
 				if (ValidateExcavation (buildGhost.transform.position)) {
 					Collider2D hitCollider = Physics2D.OverlapPoint (buildGhost.transform.position, layerMask);
 					if (hitCollider != null && hitCollider.gameObject.tag == "Wall") {
+						gameManager.soundManager.PlayBreakWallSFX ();
 						hitCollider.gameObject.transform.parent.GetComponent<MegaWall>().Kill();
 						gameManager.cash -= cost;
 						gameManager.uiManager.UpdateCashText ();
@@ -154,6 +157,7 @@ public class BuildStateManager : MonoBehaviour {
 			} else {
 				if (ValidateBuildLocation (buildGhost.transform.position)) {
 					Instantiate (prefabToBuild, buildGhost.transform.position, buildGhost.transform.rotation);
+					gameManager.soundManager.PlayBuildMachineSFX ();
 					gameManager.cash -= cost;
 					gameManager.uiManager.UpdateCashText ();
 				}

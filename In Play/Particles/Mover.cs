@@ -16,7 +16,7 @@ public class Mover : MonoBehaviour {
 	}
 
 	void OnTriggerStay2D(Collider2D other) {
-		if (Vector3.Distance (transform.position, origin) > 0.75f)
+		if (Vector3.Distance (transform.position, origin) > 0.75f && other.gameObject.layer == 8)
 			gameObject.SetActive (false);
 	}
 

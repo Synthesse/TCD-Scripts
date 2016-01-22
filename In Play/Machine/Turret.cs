@@ -8,7 +8,7 @@ public class Turret : Defenses {
 		maxHP = 5;
 		currentAP = 8;
 		maxAP = 8;
-		atk = 4;
+		atk = 6;
 		def = 4;
 		objectName = "Turret";
 	}
@@ -27,7 +27,9 @@ public class Turret : Defenses {
 		switch (buttonNum) {
 		case 1:
 			//Target Attack
-			gameManager.combatManager.ActivateTargeting (abilityList [0]);
+			if (abilityList [0].apCost <= currentAP) {
+				gameManager.combatManager.ActivateTargeting (abilityList [0]);
+			}
 			break;
 		default:
 			break;

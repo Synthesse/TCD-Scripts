@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 //SWITCH TO THIS ONCE WE FULLY IMPLEMENT INTERFACE REQUIREMENTS
 //public class PhysicalObject : MonoBehaviour, ILocateable {
@@ -25,4 +26,30 @@ public abstract class PhysicalObject : MonoBehaviour {
 		return (gridLocations);
 	}
 
+	public List<Vector2> NearestOpenSpaces(Vector2 start) {
+	//TODO: technically works for 2x1 and 2x2, really hacky
+		start = new Vector2(Mathf.FloorToInt(start.x), Mathf.FloorToInt(start.y));
+		int layerMask = 1 << 8;
+		Dictionary<float,Vector2> locationReference = new Dictionary<float,Vector2>();
+		List<float> sortingList = new List<float> ();
+		List<Vector2> locList = new List<Vector2> ();
+
+		for (int i = -1; i <= 1; i++) {
+			for (int j = -1; j <= 1; j++) {
+				if (i != 0 || j != 0) {
+					Vector2 edgePosition = (Vector2)this.transform.position + new Vector2 (i, j);
+					if (Physics2D.OverlapPoint (edgePosition, layerMask) == null) {
+						float dist = Vector2.Distance (start, edgePosition)+(3*i+j)/1000f;
+						sortingList.Add (dist);
+						locationReference.Add (dist, edgePosition);
+					}
+				}
+			}
+		}
+		sortingList.Sort ();
+		foreach (float sortedDist in sortingList) {
+			locList.Add (locationReference [sortedDist]);
+		}
+		return locList;
+	}
 }

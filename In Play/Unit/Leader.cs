@@ -10,20 +10,20 @@ public class Leader : Unit {
 	protected override void Awake ()
 	{
 		objectName = "Valerie";
-		currentHP = 20;
-		maxHP = 20;
+		currentHP = 10;
+		maxHP = 10;
 		currentAP = 6;
 		maxAP = 6;
 		atk = 6;
 		def = 2;
 		numThralls = 0;
-		special = "Controls Minds";
+		special = "Is Awesome";
 	}
 
 	protected override void Start() {
 		base.Start ();
 		numCombatActions = 3;
-		abilityList.Add (new Attack ());
+		abilityList.Add (new Attack (3));
 		abilityList.Add (new Inspire ());
 		abilityList.Add (new MindControl ());
 //		Sprite testSprite = Resources.Load<Sprite> ("lead_researcher_transparent_1");
@@ -37,6 +37,8 @@ public class Leader : Unit {
 	public override void Damage (int damageTaken)
 	{
 		base.Damage (damageTaken);
+		if (!gameManager.soundManager.raisedTension)
+			gameManager.soundManager.raisedTension = true;
 		if (currentHP <= 0)
 			gameManager.GameOver ();
 	}
@@ -67,7 +69,7 @@ public class Leader : Unit {
 			break;
 		case 3:
 			//MC
-			if (abilityList [2].apCost <= currentAP)
+			if (abilityList [2].apCost <= currentAP && numThralls < amplifiers.Count)
 				gameManager.combatManager.ActivateTargeting (abilityList [2]);
 			break;
 		default:

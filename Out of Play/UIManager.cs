@@ -90,6 +90,12 @@ public class UIManager : MonoBehaviour {
 			vitalStatsText.enabled = true;
 			if (gameManager.combatManager.combatModeEnabled && gameManager.selectedObject.tag == "Ally") {
 				combatPanel.SetActive (true);
+				Unit unit = gameManager.selectedObject.GetComponent<Unit> ();
+				if (unit != null) {
+					UpdateCombatPanelButtonText (unit.abilityList);
+				}
+				else
+					UpdateCombatPanelButtonText (gameManager.selectedObject.GetComponent<Defenses> ().abilityList);
 			}
 		} else {
 			selectedUnitText.enabled = false;
@@ -111,7 +117,6 @@ public class UIManager : MonoBehaviour {
 	}
 
 	public void ToggleCombatPanelButtons () {
-		Debug.Log ("ToggleCombatPanelButtons");
 		if (gameManager.combatManager.targetingActive) {
 			if (combatPanelButtons [0].gameObject.activeSelf == false)
 				combatPanelButtons [0].gameObject.SetActive(true);
@@ -222,12 +227,26 @@ public class UIManager : MonoBehaviour {
 		detailPanel.GetComponentInChildren<Text> ().text = "Status: " + status + "\nHP: " + maxHP + "\nAtk: " + atk + "\nDef: " + def + "\nAP: " + maxAP + "\nSpecial: " + special;
 	}
 
+	public void UpdateDetailsText(string status, int maxHP, string atk, int def, int maxAP, string special) {
+		detailPanel.GetComponentInChildren<Text> ().text = "Status: " + status + "\nHP: " + maxHP + "\nAtk: " + atk + "\nDef: " + def + "\nAP: " + maxAP + "\nSpecial: " + special;
+	}
+
 	public void UpdateWaveNumberText() {
 		waveNumText.text = "Wave " + gameManager.waveNumber;
 	}
 
 	public void UpdateNeuralBuildButtonText(int cost) {
 		buildPanelButtons [5].GetComponentInChildren<Text> ().text = "Neural Amplifier ($" + cost.ToString() + ")"; 
+	}
+
+	public void UpdateCombatPanelButtonText(List<Ability> abilityList) {
+		for (int i = 0; i < abilityList.Count; i++) {
+			//TODO: move this. Also adjust font size dynamically on combal panel buttons.
+			if (abilityList [i].abilityName == "Mind Control" && FindObjectOfType<Leader> ().numThralls >= FindObjectOfType<Leader> ().amplifiers.Count) 
+				combatPanelButtons [i + 1].GetComponentInChildren<Text> ().text = abilityList [i].alternateAbilityButtonText;
+		 	else
+				combatPanelButtons [i + 1].GetComponentInChildren<Text> ().text = abilityList [i].abilityButtonText;
+		}
 	}
 
 	public void ToggleTurnText(bool isPlayerTurn) {
@@ -247,10 +266,6 @@ public class UIManager : MonoBehaviour {
 			pathArray [i] = new Vector3 (pathList [i].x, pathList [i].y, pathList [i].z - 0.5f);
 		}
 		pathRenderLine.SetPositions (pathArray);
-	}
-
-	public void UpdateCombatPanelButtonText(List<int> buttonNums, List<string> text) {
-
 	}
 
 	public void UnrenderPathLine() {

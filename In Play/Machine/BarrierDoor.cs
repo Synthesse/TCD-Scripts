@@ -32,9 +32,11 @@ public class BarrierDoor : Defenses {
 	protected override void ProcessCombatPanelClick (int buttonNum) {
 		switch (buttonNum) {
 		case 1:
-			gameManager.playerInput.TogglePlayerInputLock (true);
-			gameManager.combatManager.ToggleActionLock (true);
-			StartCoroutine(abilityList[0].Execute(this));
+			if (abilityList [0].apCost <= currentAP) {
+				gameManager.playerInput.TogglePlayerInputLock (true);
+				gameManager.combatManager.ToggleActionLock (true);
+				StartCoroutine (abilityList [0].Execute (this));
+			}
 			break;
 		case 2:
 			break;

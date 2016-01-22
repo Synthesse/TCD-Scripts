@@ -20,18 +20,21 @@ public abstract class Unit : SelectableObject {
 
 	public Seeker seeker;
 	//private Path path;
-	private List<Vector3> storedPath;
-	private int storedPathCost = 666;
+	protected List<Vector3> storedPath;
+	protected int storedPathCost = 666;
 
 	protected float inverseMoveTime;
 
 	protected Animator animator;
 	protected direction currentMovementDirection = direction.None;
 
-	protected List<Ability> abilityList;
+	public List<Ability> abilityList;
 	protected List<string> abilityTextList;
 
-	private int thrallIndex = -1;
+	protected int thrallIndex = -1;
+
+	//TODO: Remove this. Refactor AI code to generate ranges based on abilities used.
+	protected int aiAttackRange;
 
 
 	// GENERAL METHODS
@@ -50,7 +53,6 @@ public abstract class Unit : SelectableObject {
 		seeker = GetComponent<Seeker> ();
 		animator = GetComponent<Animator> ();
 		animator.enabled = false;
-		numCombatActions = 1;
 		storedPath = new List<Vector3> ();
 		abilityList = new List<Ability> ();
 		currentFacing = direction.Down;
@@ -172,11 +174,12 @@ public abstract class Unit : SelectableObject {
 	}
 
 	protected IEnumerator SmoothMovement (List<Vector3> movementList) {
+		gameManager.soundManager.PlayWalkSFX ();
 		direction currentDirection = direction.None;
 		for (int i = 0; i < movementList.Count; i++) {
 			direction newDirection = gameManager.boardManager.FindDirection (transform.position, movementList [i]);
 			if (newDirection != currentDirection) {
-				Debug.Log (newDirection);
+				//Debug.Log (newDirection);
 				AnimateMovement (newDirection);
 				currentDirection = newDirection;
 			}
@@ -190,7 +193,7 @@ public abstract class Unit : SelectableObject {
 			}
 		}
 
-
+		gameManager.soundManager.StopSFXLoop ();
 		animator.SetTrigger ("stand");
 		animator.enabled = false;
 
@@ -202,6 +205,10 @@ public abstract class Unit : SelectableObject {
 
 	// COMBAT METHODS
 	public virtual void Damage (int damageTaken) {
+		Mark mark = GetComponentInChildren<Mark> ();
+		if (mark != null) {
+			damageTaken += mark.strength;
+		}
 		currentHP -= Mathf.Max(damageTaken - def, 1);
 		UpdateVitalsUIText ();
 		if (currentHP <= 0) {
@@ -209,10 +216,17 @@ public abstract class Unit : SelectableObject {
 		}
 	}
 
+	public virtual void Heal (int heal) {
+		currentHP = Mathf.Min (currentHP + heal, maxHP);
+		UpdateVitalsUIText ();
+	}
+
 	public virtual void Kill () {
-		if (isAlly)
+		if (isAlly) {
 			gameManager.combatManager.activeAllies.Remove (gameObject);
-		else { 
+			if (!gameManager.soundManager.raisedTension)
+				gameManager.soundManager.raisedTension = true;
+		} else { 
 			gameManager.combatManager.activeEnemies.Remove (gameObject);
 			gameManager.cash++;
 			gameManager.uiManager.UpdateCashText ();
@@ -270,19 +284,26 @@ public abstract class Unit : SelectableObject {
 
 	// COMBAT AI METHODS
 
+	//TODO: MAKE THESE METHODS LESS SHIT
 	public virtual IEnumerator EnableCombatAI() {
 		if (!gameManager.combatManager.actionLock) { //Might have to remove this. Lots of weird coroutine/lock interactions
 			gameManager.combatManager.ToggleActionLock(true);
-			//Select ();
+			// Store path to neaest enemy
 			StorePathToNearest ();
 			List<Vector3> movePath = new List<Vector3> ();
 			Vector3 currentLocation = this.transform.position;
+			// While AP > 0
 			while (currentAP > 0) {
-				gameManager.combatManager.FindTargets (gameObject, false);
+				// Find targets in range
+				boxCollider.enabled = false;
+				gameManager.combatManager.FindTargets (currentLocation, false, aiAttackRange, false);
+				boxCollider.enabled = true;
 				Debug.Log ("Finding Targets: "+gameManager.combatManager.targetedObjects.Count);
-				if (gameManager.combatManager.targetedObjects.Count > 0 && currentAP > 1) {
+				// If there are targets in range and current AP >= attack AP cost
+				if (gameManager.combatManager.targetedObjects.Count > 0 && currentAP >= 2) {
 					if (movePath.Count > 0) {
 						gameManager.combatManager.ToggleActionLock (true);
+						gameManager.playerInput.TogglePlayerInputLock(true);
 						yield return StartCoroutine (SmoothMovement (movePath));
 						movePath.Clear ();
 					}
@@ -294,6 +315,7 @@ public abstract class Unit : SelectableObject {
 					StorePathToNearest ();
 				} else {
 					if (storedPath.Count == 0) {
+						Debug.Log ("Cant do anything, lose all AP");
 						DeductAP (currentAP);
 					} else {
 						currentLocation = ExecuteNextAIMove (currentLocation);
@@ -304,10 +326,12 @@ public abstract class Unit : SelectableObject {
 			}
 			if (movePath.Count > 0) {
 				gameManager.combatManager.ToggleActionLock (true);
+				gameManager.playerInput.TogglePlayerInputLock(true);
 				yield return StartCoroutine (SmoothMovement (movePath));
 				movePath.Clear ();
 			}
 			//Deselect ();
+			gameManager.combatManager.ResetTargets ();
 			storedPath.Clear ();
 			storedPathCost = 666;
 			gameManager.combatManager.ToggleActionLock(false);
@@ -315,9 +339,8 @@ public abstract class Unit : SelectableObject {
 	}
 
 	protected virtual IEnumerator ShittyTestAttack (GameObject target) {
-		Attack attack = new Attack ();
+		Attack attack = new Attack (aiAttackRange);
 		yield return StartCoroutine(attack.Execute (this, target));
-
 	}
 
 	protected Vector3 ExecuteNextAIMove (Vector3 currentLocation) {
@@ -343,16 +366,26 @@ public abstract class Unit : SelectableObject {
 		List<GameObject> activeTargets = gameManager.combatManager.GetActors (false);
 	
 		foreach (GameObject target in activeTargets) {
-			Vector3 targetLocation = new Vector3 (target.transform.position.x, target.transform.position.y, 0);
+			Vector3 targetLocation = new Vector3 (-1,-1,-1);
+			//TODO: idea, give each AI unit a sorted/dictionary of target enemies, then update each AI list when the enemy in question moves. then AI can just pull from min of list
+			Path path = null;
 
-			Path path = seeker.StartPath (new Vector3 (transform.position.x, transform.position.y, 0), targetLocation);
-			AstarPath.WaitForPath (path);
-			int pathCost = CalculatePathCost (path, targetLocation);
-			if (pathCost < storedPathCost && path != null) {
-				storedPath = path.vectorPath;
-				storedPath.RemoveAt (0);
-				storedPath.RemoveAt (storedPath.Count-1);
-				storedPathCost = pathCost;
+			foreach (Vector2 potentialEdgeLocation in target.GetComponent<PhysicalObject>().NearestOpenSpaces((Vector2)transform.position)) {
+				path = seeker.StartPath (new Vector3 (transform.position.x, transform.position.y, 0), (Vector3)potentialEdgeLocation);
+				AstarPath.WaitForPath (path);
+				if (path != null && ValidatePath(path, (Vector3)potentialEdgeLocation)) {
+					targetLocation = potentialEdgeLocation;
+					break;
+				}
+			}
+			if (targetLocation.x >= 0) {
+				int pathCost = CalculatePathCost (path, targetLocation);
+				if (pathCost < storedPathCost) {
+					storedPath = path.vectorPath;
+					storedPath.RemoveAt (0);
+					//storedPath.RemoveAt (storedPath.Count - 1);
+					storedPathCost = pathCost;
+				}
 			}
 		}
 	}

@@ -58,6 +58,7 @@ public abstract class SelectableObject : PhysicalObject {
 
 	public void ChangeFacing(direction newFacing) {
 		spriteRenderer.sprite = directionalSprites [(int)newFacing];
+		currentFacing = newFacing;
 	}
 
 	public void ChangeFacing(direction8 newFacing) {

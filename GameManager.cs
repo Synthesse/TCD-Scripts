@@ -11,6 +11,7 @@ public class GameManager : MonoBehaviour {
 	public UIManager uiManager;
 	public BuildStateManager buildManager;
 	public CombatStateManager combatManager;
+	public SoundManager soundManager;
 	public bool buildMode = false;
 	public long cash = 0;
 	public int waveNumber = 0;
@@ -31,6 +32,7 @@ public class GameManager : MonoBehaviour {
 		playerInput = GetComponent<PlayerInput> ();
 		combatManager = GetComponent<CombatStateManager> ();
 		buildManager = GetComponent<BuildStateManager> ();
+		soundManager = FindObjectOfType<SoundManager> ();
 		uiManager.Initialize ();
 		playerInput.Initialize ();
 		InitGame ();
@@ -54,6 +56,8 @@ public class GameManager : MonoBehaviour {
 	}
 
 	public void GameOver() {
+		StopAllCoroutines ();
+		soundManager.gameObject.SetActive (false);
 		uiManager.backdrop.SetActive (true);
 		uiManager.gameOverText.text = "Game Over\nReached Wave " + waveNumber.ToString ();
 		uiManager.gameOverText.enabled = true;

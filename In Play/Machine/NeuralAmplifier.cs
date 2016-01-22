@@ -36,7 +36,10 @@ public class NeuralAmplifier : Machine {
 	}
 
 	public void Reset() {
-		controlledUnit = null;
-		animator.enabled = false;
+		if (controlledUnit != null) {
+			controlledUnit = null;
+			animator.enabled = false;
+			leader.numThralls--;
+		}
 	}
 }

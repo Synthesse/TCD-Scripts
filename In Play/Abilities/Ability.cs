@@ -10,12 +10,14 @@ public abstract class Ability {
 	protected abilityTargetingTypes targetType;
 	public int apCost;
 	protected int cooldown;
-	protected int range;
+	public int range;
 	public bool friendlyTarget;
-	protected string abilityName;
+	public string abilityName;
 	protected string abilityDescription;
+	public string abilityButtonText;
 	protected string keyPress;
 	protected int currentCooldown;
+	public string alternateAbilityButtonText;
 
 	protected GameManager gameManager;
 
@@ -26,6 +28,8 @@ public abstract class Ability {
 		friendlyTarget = false;
 		abilityName = "Generic Ability";
 		abilityDescription = "Description?";
+		abilityButtonText = "PLACEHOLDER";
+		alternateAbilityButtonText = "PLACEHOLDER";
 		keyPress = "a";
 		targetType = abilityTargetingTypes.None;
 		gameManager = GameManager.instance;
@@ -59,4 +63,6 @@ public abstract class Ability {
 		self.DeductAP (apCost);
 		yield return null;
 	}
+
+
 }

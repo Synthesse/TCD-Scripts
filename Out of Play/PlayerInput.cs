@@ -89,7 +89,6 @@ public class PlayerInput : MonoBehaviour {
 		} else if (inputLockThreads <= 0 && playerInputLock) {
 			playerInputLock = false;
 			gameManager.uiManager.blockInput.SetActive (false);
-			inputLockThreads = 0;
 		}
 	}
 
@@ -171,6 +170,10 @@ public class PlayerInput : MonoBehaviour {
 				Camera.main.orthographicSize -= 1f;
 			}
 
+			//MUTE
+			if (Input.GetKeyDown ("m")) {
+				gameManager.soundManager.MuteAudio ();
+			}
 
 		}
 

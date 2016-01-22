@@ -9,7 +9,7 @@ public abstract class Defenses : Machine {
 	public int atk;
 	public string special = "Nothing";
 	public bool isAlly = true;
-	protected List<Ability> abilityList;
+	public List<Ability> abilityList;
 
 	protected override void Awake () {
 		currentHP = 1;
