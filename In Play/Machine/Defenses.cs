@@ -7,11 +7,12 @@ public abstract class Defenses : Machine {
 	public int currentAP;
 	public int maxAP;
 	public int atk;
-	public string special = "Nothing";
 	public bool isAlly = true;
 	public List<Ability> abilityList;
 
 	protected override void Awake () {
+		spriteRenderer = gameObject.GetComponent<SpriteRenderer> ();
+		storedColor = spriteRenderer.color;
 		currentHP = 1;
 		maxHP = 1;
 		currentAP = 1;
@@ -30,13 +31,22 @@ public abstract class Defenses : Machine {
 	public override void UpdateObjectUIText ()
 	{
 		base.UpdateObjectUIText ();
-		gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP);
+		if (currentAP == 0) {
+			gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP, Color.yellow);
+		} else { 
+			gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP);
+		}
 		gameManager.uiManager.UpdateDetailsText (status, maxHP, atk, def, maxAP, special);
 	}
 
 	protected override void UpdateVitalsUIText() {
-		if (isSelected)
-			gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP);
+		if (isSelected) {
+			if (currentAP == 0) {
+				gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP, Color.yellow);
+			} else { 
+				gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP);
+			}
+		}
 	}
 
 

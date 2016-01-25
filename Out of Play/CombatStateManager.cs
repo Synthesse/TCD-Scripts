@@ -13,7 +13,8 @@ public class CombatStateManager : MonoBehaviour {
 	public List<GameObject> activeEnemies;
 	public List<GameObject> activeAllies;
 	public List<GameObject> targetedObjects;
-	private int layerMask = (1 << 8) | (1 << 9) ;
+	public List<GameObject> potentialTargets;
+	private int layerMask = (1 << 8);
 	public bool actionLock;
 	public int actionLockThreads;
 
@@ -45,6 +46,23 @@ public class CombatStateManager : MonoBehaviour {
 
 	void EndCombat () {
 		RefreshSideAP ();
+		if (!gameManager.hardModeEnabled) {
+			foreach (GameObject actor in activeAllies) {
+				if (actor.GetComponent<Unit> () != null)
+					actor.GetComponent<Unit> ().Heal (2);
+				else if (actor.GetComponent<Machine> () != null)
+					actor.GetComponent<Machine> ().Heal (2);
+			}
+		}
+		BarrierDoor[] barrierDoorArray = FindObjectsOfType<BarrierDoor> ();
+		foreach (BarrierDoor barrierDoor in barrierDoorArray) {
+			DoorBarrier doorBarrier = barrierDoor.GetComponentInChildren<DoorBarrier> ();
+			if (doorBarrier.barrierEnabled) {
+				gameManager.playerInput.TogglePlayerInputLock (true);
+				ToggleActionLock (true);
+				StartCoroutine(barrierDoor.abilityList [0].Execute (barrierDoor));
+			}
+		}
 		Mark[] markArray = FindObjectsOfType<Mark> ();
 		foreach (Mark mark in markArray) {
 			Destroy (mark.gameObject);
@@ -53,9 +71,13 @@ public class CombatStateManager : MonoBehaviour {
 		combatModeEnabled = false;
 		activeAllies.Clear ();
 		activeEnemies.Clear ();
+		gameManager.Income ();
 		if (targetingActive)
 			DeactivateTargeting ();
 		gameManager.soundManager.SetNonCombatMusic ();
+		if (gameManager.waveNumber == 100) {
+			gameManager.WinGame ();
+		}
 	}
 		
 	private void UpgradeWave (List<GameObject> waveList, int numUpgrades) {
@@ -74,16 +96,18 @@ public class CombatStateManager : MonoBehaviour {
 				waveList [unitChoice].GetComponent<Unit> ().maxAP++;
 				break;
 			case 4:
-				waveList [unitChoice].GetComponent<Unit> ().currentHP++;
-				waveList [unitChoice].GetComponent<Unit> ().maxHP++;
+				waveList [unitChoice].GetComponent<Unit> ().currentHP += 3;
+				waveList [unitChoice].GetComponent<Unit> ().maxHP += 3;
 				break;
 			}
 		}
 	}
 
 	private List<GameObject> CreateWave () {
-		int numEnemies = Mathf.RoundToInt (Mathf.Pow (gameManager.waveNumber, 0.67f));
-		int numUpgrades = Mathf.RoundToInt (gameManager.waveNumber / 1.5f);
+		int numEnemies = Mathf.RoundToInt (Mathf.Pow (gameManager.waveNumber, 0.7f));
+		int numUpgrades = Mathf.FloorToInt(gameManager.waveNumber)-1;
+		if (gameManager.hardModeEnabled)
+			numUpgrades += Mathf.RoundToInt (Mathf.Pow((gameManager.waveNumber-100),2));
 		gameManager.boardManager.DefaultWaveSpawn (numEnemies);
 		List<GameObject> waveList = new List<GameObject>(GameObject.FindGameObjectsWithTag ("Enemy"));
 		UpgradeWave (waveList, numUpgrades);
@@ -151,11 +175,10 @@ public class CombatStateManager : MonoBehaviour {
 		string passthruTag;
 
 		string alternateTargetTag = "";
-		List<GameObject> potentialTargets;
 		if (targetEnemy) {
 			targetTag = "Enemy";
 			passthruTag = "Ally";
-			potentialTargets = activeEnemies;
+			potentialTargets = activeEnemies.GetRange(0,activeEnemies.Count);
 		} else {
 			targetTag = "Ally";
 			passthruTag = "Enemy";
@@ -176,19 +199,19 @@ public class CombatStateManager : MonoBehaviour {
 			//TODO: Change this to be less shitty (use interfaces)
 			if (!potentialTarget.GetComponent<SelectableObject> ().attackable) {
 				//Debug.Log ("Not attackable!");
-				break;
-			}
-			if (requireBloodied && ((potentialTarget.GetComponent<Unit>() != null && potentialTarget.GetComponent<Unit>().currentHP >= potentialTarget.GetComponent<Unit>().maxHP/2.0f) || potentialTarget.GetComponent<Robot>() != null)) {
+				if (isPlayerTurn)
+					potentialTarget.SendMessage ("CantTarget");
+			} else if (requireBloodied && ((potentialTarget.GetComponent<Unit>() != null && potentialTarget.GetComponent<Unit>().currentHP > potentialTarget.GetComponent<Unit>().maxHP/2.0f) || potentialTarget.GetComponent<Robot>() != null)) {
 				//Debug.Log ("Immune to MC!");
-				break;
-			}
-			if (Vector2.Distance (sourcePosition, new Vector2(Mathf.FloorToInt(potentialTarget.transform.position.x),Mathf.FloorToInt(potentialTarget.transform.position.y))) <= (range + 0.5f)) {
+				if (isPlayerTurn)
+					potentialTarget.SendMessage ("CantTarget");
+			} else if (Vector2.Distance (sourcePosition, new Vector2 (Mathf.FloorToInt (potentialTarget.transform.position.x), Mathf.FloorToInt (potentialTarget.transform.position.y))) <= (range + 0.5f)) {
 				//Debug.Log ("Start raycast");
 				RaycastHit2D[] hitArray;
 				hitArray = Physics2D.LinecastAll (sourcePosition, (Vector2)potentialTarget.transform.position, layerMask);
 				foreach (RaycastHit2D hit in hitArray) {
-					//Debug.Log ("Raycast hit");
-					if ((hit.transform.tag == targetTag || hit.transform.tag == alternateTargetTag) && !targetedObjects.Contains (hit.transform.gameObject)) {
+					//Debug.Log ("Raycast hit "+hit.transform.gameObject.GetComponent<SelectableObject>().objectName);
+					if (hit.transform.gameObject == potentialTarget && (hit.transform.tag == targetTag || hit.transform.tag == alternateTargetTag) && !targetedObjects.Contains (hit.transform.gameObject)) {
 						if (isPlayerTurn)
 							hit.transform.gameObject.SendMessage ("Target");
 						targetedObjects.Add (hit.transform.gameObject);
@@ -196,9 +219,14 @@ public class CombatStateManager : MonoBehaviour {
 					} else if (hit.transform.tag == passthruTag) {
 						//Do nothing
 					} else {
+						if (isPlayerTurn)
+							potentialTarget.SendMessage ("CantTarget");
 						break;	
 					}
 				}
+			} else {
+				if (isPlayerTurn)
+					potentialTarget.SendMessage ("CantTarget");
 			}
 		}
 	}
@@ -209,11 +237,12 @@ public class CombatStateManager : MonoBehaviour {
 
 	public void ResetTargets() {
 		if (isPlayerTurn) {
-			foreach (GameObject target in targetedObjects) {
+			foreach (GameObject target in potentialTargets) {
 				target.SendMessage ("Untarget");
 			}
 		}
 		targetedObjects.Clear ();
+		potentialTargets.Clear ();
 	}
 
 	public void ProcessHitTarget(GameObject hitTarget) {

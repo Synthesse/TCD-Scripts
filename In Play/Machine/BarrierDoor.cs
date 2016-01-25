@@ -7,13 +7,16 @@ public class BarrierDoor : Defenses {
 	protected Animator animator;
 
 	protected override void Awake () {
-		currentHP = 5;
-		maxHP = 5;
+		spriteRenderer = gameObject.GetComponent<SpriteRenderer> ();
+		storedColor = spriteRenderer.color;
+		currentHP = 4;
+		maxHP = 4;
 		currentAP = 1;
 		maxAP = 1;
 		atk = 0;
-		def = 3;
+		def = 2;
 		objectName = "Barrier Door";
+		special = "Activate to project barrier";
 	}
 
 	protected override void Start() {

@@ -4,13 +4,16 @@ using System.Collections;
 public class Turret : Defenses {
 
 	protected override void Awake () {
-		currentHP = 5;
-		maxHP = 5;
-		currentAP = 8;
-		maxAP = 8;
-		atk = 6;
-		def = 4;
+		spriteRenderer = gameObject.GetComponent<SpriteRenderer> ();
+		storedColor = spriteRenderer.color;
+		currentHP = 7;
+		maxHP = 7;
+		currentAP = 4;
+		maxAP = 4;
+		atk = 4;
+		def = 2;
 		objectName = "Turret";
+		special = "Long range fire; static";
 	}
 
 	// Use this for initialization

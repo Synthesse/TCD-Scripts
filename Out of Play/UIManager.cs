@@ -21,8 +21,15 @@ public class UIManager : MonoBehaviour {
 	public Text vitalStatsText;
 	public Text buildNoteText;
 	public Text gameOverText;
+	public Text gameOverNoteText;
 	public GameObject backdrop;
 	public GameObject blockInput;
+	public Image tutorialReferenceImage;
+	public Text tutorialText;
+	public Text tutorialTitleText;
+	public Button continueButton;
+	public Button hardModeButton;
+	[HideInInspector] public GameObject dapperGoose;
 
 	public GameObject detailPanel;
 	public GameObject buildPanel;
@@ -51,8 +58,10 @@ public class UIManager : MonoBehaviour {
 		vitalStatsText = GameObject.Find ("vitalStatsText").GetComponent<Text> ();
 		buildNoteText = GameObject.Find ("buildNoteText").GetComponent<Text> ();
 		gameOverText = GameObject.Find ("gameOverText").GetComponent<Text> ();
+		gameOverNoteText = GameObject.Find ("gameOverNoteText").GetComponent<Text> ();
 		backdrop = GameObject.Find ("backdrop");
 		blockInput = GameObject.Find ("blockInputImage");
+		dapperGoose = GameObject.Find ("dapperGoose");
 
 		detailPanel = GameObject.Find ("detailPanel");
 		buildPanel = GameObject.Find ("buildPanel");
@@ -60,6 +69,12 @@ public class UIManager : MonoBehaviour {
 		buildPanelButtons = buildPanel.GetComponentsInChildren<Button> ();
 		combatPanelButtons = combatPanel.GetComponentsInChildren<Button> ();
 		detailPanelText = detailPanel.GetComponentInChildren<Text> ();
+
+		continueButton = GameObject.Find ("continueButton").GetComponent<Button> ();
+		hardModeButton = GameObject.Find ("hardModeButton").GetComponent<Button> ();
+		tutorialText = GameObject.Find ("tutorialText").GetComponent<Text> ();
+		tutorialTitleText = GameObject.Find ("tutorialTitleText").GetComponent<Text> ();
+		tutorialReferenceImage = GameObject.Find ("tutorialReferenceImage").GetComponent<Image> ();
 
 		pathRenderLine = GameObject.Find ("Pathfinding Renderer").GetComponent<LineRenderer> ();
 
@@ -78,7 +93,15 @@ public class UIManager : MonoBehaviour {
 		pathRenderLine.enabled = false;
 		backdrop.SetActive (false);
 		gameOverText.enabled = false;
+		gameOverNoteText.enabled = false;
 		restartGameButton.gameObject.SetActive (false);
+		hardModeButton.gameObject.SetActive (false);
+		continueButton.gameObject.SetActive (false);
+		tutorialText.enabled = false;
+		tutorialTitleText.enabled = false;
+		tutorialReferenceImage.gameObject.SetActive (false);
+		dapperGoose.SetActive (false);
+
 		blockInput.SetActive (false);
 
 	}
@@ -204,6 +227,13 @@ public class UIManager : MonoBehaviour {
 		selectedUnitText.text = unitName;
 	}
 
+	public void UpdateVitalsText() {
+		vitalStatsText.text = "";
+		if (vitalStatsText.color != Color.white) {
+			vitalStatsText.color = Color.white;
+		}
+	}
+
 	public void UpdateVitalsText(int currentHP, int maxHP, int currentAP, int maxAP) {
 		if (maxAP != 0) {
 			vitalStatsText.text = "HP " + currentHP + "/" + maxHP + "   AP " + currentAP + "/" + maxAP;
@@ -214,6 +244,7 @@ public class UIManager : MonoBehaviour {
 			vitalStatsText.color = Color.white;
 		}
 	}
+
 	public void UpdateVitalsText(int currentHP, int maxHP, int currentAP, int maxAP, Color color) {
 		if (maxAP != 0) {
 			vitalStatsText.text = "HP " + currentHP + "/" + maxHP + "   AP " + currentAP + "/" + maxAP;
@@ -221,6 +252,10 @@ public class UIManager : MonoBehaviour {
 			vitalStatsText.text = "HP " + currentHP + "/" + maxHP;
 		}
 		vitalStatsText.color = color;
+	}
+
+	public void UpdateDetailsText(string special) {
+		detailPanel.GetComponentInChildren<Text> ().text = special;
 	}
 
 	public void UpdateDetailsText(string status, int maxHP, int atk, int def, int maxAP, string special) {
@@ -236,7 +271,7 @@ public class UIManager : MonoBehaviour {
 	}
 
 	public void UpdateNeuralBuildButtonText(int cost) {
-		buildPanelButtons [5].GetComponentInChildren<Text> ().text = "Neural Amplifier ($" + cost.ToString() + ")"; 
+		buildPanelButtons [5].GetComponentInChildren<Text> ().text = "Neural Amplifier ($" + cost.ToString() + ")\nEnables mind control"; 
 	}
 
 	public void UpdateCombatPanelButtonText(List<Ability> abilityList) {
@@ -270,6 +305,26 @@ public class UIManager : MonoBehaviour {
 
 	public void UnrenderPathLine() {
 		pathRenderLine.enabled = false;
+	}
+
+	public void EnableTutorialScreen(Sprite imageSprite, string titleText, string bodyText) {
+		backdrop.SetActive (true);
+		continueButton.gameObject.SetActive (true);
+
+		tutorialReferenceImage.sprite = imageSprite;
+		tutorialText.text = bodyText;
+		tutorialTitleText.text = titleText;
+		tutorialText.enabled = true;
+		tutorialTitleText.enabled = true;
+		tutorialReferenceImage.gameObject.SetActive (true);
+	}
+
+	public void DisableTutorialScreen() {
+		backdrop.SetActive (false);
+		continueButton.gameObject.SetActive (false);
+		tutorialText.enabled = false;
+		tutorialTitleText.enabled = false;
+		tutorialReferenceImage.gameObject.SetActive (false);
 	}
 	// Update is called once per frame
 	//void Update () {

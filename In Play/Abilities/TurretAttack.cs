@@ -22,6 +22,7 @@ public class TurretAttack : Ability {
 		target.SendMessage ("SetDamageDirection", (Vector2)self.transform.position, SendMessageOptions.DontRequireReceiver);
 		gameManager.soundManager.PlayLaserSFX ();
 		GameObject laser = GameObject.Instantiate(gameManager.combatManager.laserAttackObj, self.transform.position, Quaternion.Euler(0, 0, Mathf.Rad2Deg*(gameManager.boardManager.FindAngle(self.transform.position, target.transform.position)+Mathf.PI)+90)) as GameObject;
+		laser.GetComponent<Mover>().target = target.transform.position;
 		//		while (laser.activeInHierarchy)
 		//			yield return null;
 		yield return new WaitWhile(() => laser.activeInHierarchy);

@@ -9,23 +9,28 @@ public class Leader : Unit {
 
 	protected override void Awake ()
 	{
+		spriteRenderer = gameObject.GetComponent<SpriteRenderer> ();
+		storedColor = spriteRenderer.color;
 		objectName = "Valerie";
-		currentHP = 10;
-		maxHP = 10;
+		currentHP = 12;
+		maxHP = 12;
 		currentAP = 6;
 		maxAP = 6;
-		atk = 6;
-		def = 2;
+		atk = 3;
+		def = 1;
 		numThralls = 0;
-		special = "Is Awesome";
+		special = "Can shoot, haste, and mind control. Is awesome.";
 	}
 
 	protected override void Start() {
 		base.Start ();
 		numCombatActions = 3;
-		abilityList.Add (new Attack (3));
+		if (gameManager.playerPrefs.leaderName == "Goose")
+			numCombatActions++;
+		abilityList.Add (new Attack (4));
 		abilityList.Add (new Inspire ());
 		abilityList.Add (new MindControl ());
+		abilityList.Add (new CheatKill ());
 //		Sprite testSprite = Resources.Load<Sprite> ("lead_researcher_transparent_1");
 //		directionalSprites.Add(testSprite);
 //		directionalSprites.Add(Resources.Load<Sprite> ("lead_researcher_transparent_4"));
@@ -71,6 +76,14 @@ public class Leader : Unit {
 			//MC
 			if (abilityList [2].apCost <= currentAP && numThralls < amplifiers.Count)
 				gameManager.combatManager.ActivateTargeting (abilityList [2]);
+			break;
+		case 4:
+			//Cheatkill
+			if (abilityList [3].apCost <= currentAP) {
+				gameManager.playerInput.TogglePlayerInputLock (true);
+				gameManager.combatManager.ToggleActionLock (true);
+				StartCoroutine (abilityList [3].Execute (this));
+			}
 			break;
 		default:
 			break;

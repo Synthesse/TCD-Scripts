@@ -8,10 +8,12 @@ public class Robot : Unit {
 	private bool exploding;
 
 	protected override void Awake() {
-		currentHP = 10;
-		maxHP = 10;
-		currentAP = 8;
-		maxAP = 8;
+		spriteRenderer = gameObject.GetComponent<SpriteRenderer> ();
+		storedColor = spriteRenderer.color;
+		currentHP = 12;
+		maxHP = 12;
+		currentAP = 7;
+		maxAP = 7;
 		atk = 15;
 		def = 2;
 		objectName = "Murderbot";
@@ -122,6 +124,17 @@ public class Robot : Unit {
 			gameManager.playerInput.TogglePlayerInputLock (true);
 			StartCoroutine (DeathExplosion());
 		}
+	}
+
+	public override void UpdateObjectUIText ()
+	{
+		gameManager.uiManager.UpdateNameText (objectName);
+		if (currentAP == 0) {
+			gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP, Color.yellow);
+		} else { 
+			gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP);
+		}
+		gameManager.uiManager.UpdateDetailsText (status, maxHP, "1-"+currentAP.ToString(), def, maxAP, special);
 	}
 
 }

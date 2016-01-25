@@ -26,7 +26,8 @@ public class Explode : Ability {
 		//yield return new WaitUntil (() => (explosion.GetComponent<Animator> ().GetNextAnimatorStateInfo (0).IsName ("finished")));
 		yield return new WaitForSeconds(0.75f);
 		foreach (Collider2D collider in collidersHit) {
-			collider.gameObject.SendMessage ("Damage", self.atk, SendMessageOptions.DontRequireReceiver);
+			if (collider != null)
+				collider.gameObject.SendMessage ("Damage", self.atk, SendMessageOptions.DontRequireReceiver);
 		}
 		self.DeductAP (apCost);
 		self.GetComponent<RemoteMine> ().collider.enabled = true;
@@ -43,7 +44,8 @@ public class Explode : Ability {
 		//yield return new WaitUntil (() => (explosion.GetComponent<Animator> ().GetNextAnimatorStateInfo (0).IsName ("finished")));
 		yield return new WaitForSeconds(0.75f);
 		foreach (Collider2D collider in collidersHit) {
-			collider.gameObject.SendMessage ("Damage", self.atk, SendMessageOptions.DontRequireReceiver);
+			if (collider != null)
+				collider.gameObject.SendMessage ("Damage", self.atk, SendMessageOptions.DontRequireReceiver);
 		}
 		self.DeductAP (apCost);
 		self.GetComponent<Robot> ().collider.enabled = true;

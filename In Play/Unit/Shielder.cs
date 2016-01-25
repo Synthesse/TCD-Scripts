@@ -7,12 +7,14 @@ public class Shielder : Unit {
 	private direction damageDirection;
 
 	protected override void Awake() {
-		currentHP = 16;
-		maxHP = 16;
-		currentAP = 4;
-		maxAP = 4;
+		spriteRenderer = gameObject.GetComponent<SpriteRenderer> ();
+		storedColor = spriteRenderer.color;
+		currentHP = 15;
+		maxHP = 15;
+		currentAP = 3;
+		maxAP = 3;
 		atk = 3;
-		def = 3;
+		def = 1;
 		objectName = "Captain";
 		special = "Directional Shield; Marks Targets";
 		aiAttackRange = 3;
@@ -24,6 +26,7 @@ public class Shielder : Unit {
 		abilityList.Add (new Attack (3));
 		abilityList.Add (new MarkTarget (10));
 		numCombatActions = 2;
+		ChangeFacing(gameManager.boardManager.FindDirection((Vector2)FindObjectOfType<Elevator>().transform.position, (Vector2)transform.position));
 	}
 
 	public void SetDamageDirection(Vector2 loc) {
@@ -39,7 +42,7 @@ public class Shielder : Unit {
 		Debug.Log ("taking damage");
 		Debug.Log ("Current facing" + currentFacing.ToString());
 		if (damageDirection == currentFacing) {
-			currentHP -= Mathf.Max (damageTaken - (def * 2), 1);
+			currentHP -= Mathf.Max (damageTaken - (def + 2), 1);
 		} else { 
 			currentHP -= Mathf.Max (damageTaken - def, 1);
 		}

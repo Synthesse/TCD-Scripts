@@ -14,7 +14,6 @@ public abstract class Unit : SelectableObject {
 	public int atk;
 	public int def;
 	public string status = "Normal";
-	public string special = "Nothing";
 	protected Rigidbody2D rb2D;
 	public bool isAlly = true;
 
@@ -38,7 +37,9 @@ public abstract class Unit : SelectableObject {
 
 
 	// GENERAL METHODS
-	protected virtual void Awake () {
+	protected override void Awake () {
+		spriteRenderer = gameObject.GetComponent<SpriteRenderer> ();
+		storedColor = spriteRenderer.color;
 		currentHP = 1;
 		maxHP = 1;
 		currentAP = 0;
@@ -73,13 +74,22 @@ public abstract class Unit : SelectableObject {
 	public override void UpdateObjectUIText ()
 	{
 		base.UpdateObjectUIText ();
-		gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP);
+		if (currentAP == 0) {
+			gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP, Color.yellow);
+		} else { 
+			gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP);
+		}
 		gameManager.uiManager.UpdateDetailsText (status, maxHP, atk, def, maxAP, special);
 	}
 
 	protected void UpdateVitalsUIText() {
-		if (isSelected)
-			gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP);
+		if (isSelected) {
+			if (currentAP == 0) {
+				gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP, Color.yellow);
+			} else { 
+				gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, currentAP, maxAP);
+			}
+		}
 	}
 
 	protected virtual void Update() {
@@ -228,8 +238,6 @@ public abstract class Unit : SelectableObject {
 				gameManager.soundManager.raisedTension = true;
 		} else { 
 			gameManager.combatManager.activeEnemies.Remove (gameObject);
-			gameManager.cash++;
-			gameManager.uiManager.UpdateCashText ();
 		}
 		gameManager.combatManager.targetedObjects.Remove (gameObject);
 		if (thrallIndex >= 0)
@@ -273,6 +281,8 @@ public abstract class Unit : SelectableObject {
 		}
 		AddAPToPool ();
 		DeductAP (currentAP);
+		DeductAP (-1 * Mathf.FloorToInt (maxAP / 2.0f));
+		currentHP = Mathf.Max (Mathf.FloorToInt (maxHP / 2.0f), currentHP);
 	}
 
 	public void BecomeThrall(int ind, bool isNowAlly) {
@@ -366,6 +376,9 @@ public abstract class Unit : SelectableObject {
 		List<GameObject> activeTargets = gameManager.combatManager.GetActors (false);
 	
 		foreach (GameObject target in activeTargets) {
+			if (target.layer == 9) {
+				break;
+			}
 			Vector3 targetLocation = new Vector3 (-1,-1,-1);
 			//TODO: idea, give each AI unit a sorted/dictionary of target enemies, then update each AI list when the enemy in question moves. then AI can just pull from min of list
 			Path path = null;

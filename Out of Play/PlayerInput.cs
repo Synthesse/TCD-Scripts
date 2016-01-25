@@ -43,6 +43,12 @@ public class PlayerInput : MonoBehaviour {
 			Destroy(GameObject.Find("PlayerPrefs"));
 			SceneManager.LoadScene ("Title Screen");
 		});
+		gameManager.uiManager.continueButton.onClick.AddListener (() => {
+			gameManager.tutorialManager.TransitionFromTutorialScreen();
+		});
+		gameManager.uiManager.hardModeButton.onClick.AddListener (() => {
+			gameManager.EnableHardMode();
+		});
 
 		gameManager.uiManager.combatPanelButtons [0].onClick.AddListener (() => {
 			gameManager.combatManager.DeactivateTargeting();
@@ -137,8 +143,9 @@ public class PlayerInput : MonoBehaviour {
 					// Automove if object selected and AP > 0
 					StartCoroutine (gameManager.selectedObject.GetComponent<Unit> ().ExecuteMove ());
 					//gameManager.selectedObject.SendMessage ("ExecuteMove", SendMessageOptions.DontRequireReceiver);
-				} else if (gameManager.selectedObject == null && gameManager.combatManager.combatModeEnabled) {
+				} else if (gameManager.selectedObject == null) {
 					Collider2D[] hitColliders = Physics2D.OverlapPointAll (GetMouseGridPosition (), layerMask);
+					//Debug.Log (hitColliders.Length);
 					if (hitColliders.Length == 2) {
 						gameManager.DeselectObject ();
 						hitColliders[1].gameObject.SendMessage ("Select", SendMessageOptions.DontRequireReceiver);
@@ -149,18 +156,18 @@ public class PlayerInput : MonoBehaviour {
 			}
 
 			//PAN
-			//if (Input.GetKey ("left") || Input.mousePosition.x <= 0) {
-			if (Input.GetKey ("left")) {
+			if (Input.GetKey ("left") || Input.mousePosition.x <= 0) {
+			//if (Input.GetKey ("left")) {
 				Camera.main.transform.position += new Vector3(Time.deltaTime*-9f,0,0);
-			//} else if (Input.GetKey ("right") || Input.mousePosition.x >= screenWidth - 1)
-			} else if (Input.GetKey ("right"))
+			} else if (Input.GetKey ("right") || Input.mousePosition.x >= screenWidth - 1)
+			//} else if (Input.GetKey ("right"))
 				Camera.main.transform.position += new Vector3(Time.deltaTime*9f,0,0);
 
-			//if (Input.GetKey ("up") || Input.mousePosition.y >= screenHeight-1) {
-			if (Input.GetKey ("up")) {
+			if (Input.GetKey ("up") || Input.mousePosition.y >= screenHeight-1) {
+			//if (Input.GetKey ("up")) {
 				Camera.main.transform.position += new Vector3(0,Time.deltaTime*9f,0);
-			//} else if (Input.GetKey ("down") || Input.mousePosition.y <= 0)
-			} else if (Input.GetKey ("down"))
+			} else if (Input.GetKey ("down") || Input.mousePosition.y <= 0)
+			//} else if (Input.GetKey ("down"))
 				Camera.main.transform.position += new Vector3(0,Time.deltaTime*-9f,0);
 
 			//ZOOM
@@ -174,6 +181,20 @@ public class PlayerInput : MonoBehaviour {
 			if (Input.GetKeyDown ("m")) {
 				gameManager.soundManager.MuteAudio ();
 			}
+
+			if (Input.GetKeyDown ("space")) {
+				gameManager.RefocusCamera ();
+			}
+
+			if (gameManager.uiManager.combatPanel.activeSelf) {
+				if (gameManager.uiManager.combatPanelButtons [1].gameObject.activeSelf && Input.GetKeyDown ("1")) {
+					gameManager.selectedObject.SendMessage ("ProcessCombatPanelClick", 1);
+				} else if (gameManager.uiManager.combatPanelButtons [1].gameObject.activeSelf && Input.GetKeyDown ("2")) {
+					gameManager.selectedObject.SendMessage ("ProcessCombatPanelClick", 2);
+				} else if (gameManager.uiManager.combatPanelButtons [1].gameObject.activeSelf && Input.GetKeyDown ("3")) {
+					gameManager.selectedObject.SendMessage ("ProcessCombatPanelClick", 3);
+				}
+			} 
 
 		}
 

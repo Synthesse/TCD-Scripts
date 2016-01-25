@@ -4,11 +4,13 @@ using System.Collections;
 public class Soldier : Unit {
 
 	protected override void Awake() {
-		currentHP = 10;
-		maxHP = 10;
+		spriteRenderer = gameObject.GetComponent<SpriteRenderer> ();
+		storedColor = spriteRenderer.color;
+		currentHP = 12;
+		maxHP = 12;
 		currentAP = 4;
 		maxAP = 4;
-		atk = 5;
+		atk = 4;
 		def = 1;
 		objectName = "Soldier";
 		special = "Long Range";

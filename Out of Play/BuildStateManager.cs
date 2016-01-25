@@ -21,11 +21,11 @@ public class BuildStateManager : MonoBehaviour {
 	private bool rotated = false;
 	public int neuralBuildCost;
 
-	void Start() {
+	void Awake() {
 		gameManager = GameManager.instance;
 		buildGhost = Instantiate (buildGhostPrefab) as GameObject;
 		buildGhost.SetActive (false);
-		neuralBuildCost = 1;
+		neuralBuildCost = 0;
 	}
 
 	public void ToggleBuildMode(bool turnOn) {
@@ -80,8 +80,15 @@ public class BuildStateManager : MonoBehaviour {
 
 	private bool ValidateExcavation(Vector2 location) {
 		Collider2D hitCollider = Physics2D.OverlapPoint (location, layerMask);
-		if (hitCollider != null && hitCollider.gameObject.tag == "Wall")
-			return true;
+		if (hitCollider != null && hitCollider.gameObject.tag == "Wall") {
+			MegaWall megaWallHit = hitCollider.gameObject.transform.parent.GetComponent<MegaWall> ();
+			GameObject[] hitWallNeighbors = (GameObject[])megaWallHit.neighbors.Clone ();
+			foreach (GameObject neighbor in hitWallNeighbors) {
+				if (neighbor == null) {
+					return true;
+				}
+			}
+		}
 		return false;
 	}
 
@@ -115,7 +122,7 @@ public class BuildStateManager : MonoBehaviour {
 			break;
 		case 1:
 			//Turret
-			cost = 15;
+			cost = 20;
 			break;
 		case 2:
 			//Door
@@ -148,15 +155,26 @@ public class BuildStateManager : MonoBehaviour {
 				if (ValidateExcavation (buildGhost.transform.position)) {
 					Collider2D hitCollider = Physics2D.OverlapPoint (buildGhost.transform.position, layerMask);
 					if (hitCollider != null && hitCollider.gameObject.tag == "Wall") {
-						gameManager.soundManager.PlayBreakWallSFX ();
-						hitCollider.gameObject.transform.parent.GetComponent<MegaWall>().Kill();
-						gameManager.cash -= cost;
-						gameManager.uiManager.UpdateCashText ();
+						MegaWall megaWallHit = hitCollider.gameObject.transform.parent.GetComponent<MegaWall> ();
+						GameObject[] hitWallNeighbors = (GameObject[]) megaWallHit.neighbors.Clone ();
+						foreach (GameObject neighbor in hitWallNeighbors) {
+							if (neighbor == null) {
+								gameManager.soundManager.PlayBreakWallSFX ();
+								hitCollider.gameObject.transform.parent.GetComponent<MegaWall> ().Kill ();
+								gameManager.cash -= cost;
+								gameManager.uiManager.UpdateCashText ();
+								return;
+							}
+						}
+						
 					}
 				}
 			} else {
 				if (ValidateBuildLocation (buildGhost.transform.position)) {
-					Instantiate (prefabToBuild, buildGhost.transform.position, buildGhost.transform.rotation);
+					if (prefabToBuild.name == "mine" || prefabToBuild.name == "barrierDoor")
+						Instantiate (prefabToBuild, buildGhost.transform.position + new Vector3 (0, 0, 0.01f), buildGhost.transform.rotation);
+					else
+						Instantiate (prefabToBuild, buildGhost.transform.position + new Vector3 (0, 0, 0.01f), buildGhost.transform.rotation);
 					gameManager.soundManager.PlayBuildMachineSFX ();
 					gameManager.cash -= cost;
 					gameManager.uiManager.UpdateCashText ();
@@ -166,7 +184,7 @@ public class BuildStateManager : MonoBehaviour {
 	}
 
 	public void UpdateNeuralBuildCost() {
-		neuralBuildCost = (int)Mathf.Pow (10, FindObjectOfType<Leader> ().amplifiers.Count);
+		neuralBuildCost = Mathf.FloorToInt(Mathf.Pow (10, FindObjectOfType<Leader> ().amplifiers.Count - 1));
 		cost = neuralBuildCost;
 		gameManager.uiManager.UpdateNeuralBuildButtonText (neuralBuildCost);
 	}

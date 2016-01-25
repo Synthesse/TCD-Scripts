@@ -5,10 +5,12 @@ using System.Collections.Generic;
 public class Assassin : Unit {
 
 	protected override void Awake() {
-		currentHP = 8;
-		maxHP = 8;
-		currentAP = 6;
-		maxAP = 6;
+		spriteRenderer = gameObject.GetComponent<SpriteRenderer> ();
+		storedColor = spriteRenderer.color;
+		currentHP = 9;
+		maxHP = 9;
+		currentAP = 7;
+		maxAP = 7;
 		atk = 3;
 		def = 0;
 		objectName = "Assassin";

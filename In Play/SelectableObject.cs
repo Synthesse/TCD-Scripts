@@ -16,13 +16,17 @@ public abstract class SelectableObject : PhysicalObject {
 	protected SpriteRenderer spriteRenderer;
 	public bool attackable;
 	public List<Sprite> directionalSprites;
+	public string special = "Nothing";
+
+	protected virtual void Awake () {
+		spriteRenderer = gameObject.GetComponent<SpriteRenderer> ();
+		storedColor = spriteRenderer.color;
+	}
 
 	// Use this for initialization
 	protected override void Start () {
 		base.Start ();
 		attackable = true;
-		spriteRenderer = gameObject.GetComponent<SpriteRenderer> ();
-		storedColor = spriteRenderer.color;
 	}
 
 	protected virtual void Select () {
@@ -40,20 +44,28 @@ public abstract class SelectableObject : PhysicalObject {
 		gameManager.selectedObject = null;
 		isSelected = false;
 		gameManager.uiManager.ToggleSelectedUnitUI (false);
-
 		//gameManager.playerInput.currentMouseGridLoc = null;
 	}
 
 	protected void Target () {
 		gameObject.GetComponent<SpriteRenderer> ().color = new Color (1f,0.5f,0.5f,1);
+		Debug.Log ("Targeting " + objectName);
+	}
+
+	protected void CantTarget () {
+		gameObject.GetComponent<SpriteRenderer> ().color = new Color (0.4f,0.4f,0.4f,0.75f);
+		Debug.Log ("Cant Target " + objectName);
 	}
 
 	protected void Untarget () {
 		gameObject.GetComponent<SpriteRenderer> ().color = storedColor;
+		Debug.Log ("Untarget " + objectName);
 	}
 
 	public virtual void UpdateObjectUIText () {
 		gameManager.uiManager.UpdateNameText (objectName);
+		gameManager.uiManager.UpdateVitalsText ();
+		gameManager.uiManager.UpdateDetailsText (special);
 	}
 
 	public void ChangeFacing(direction newFacing) {

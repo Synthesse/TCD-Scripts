@@ -38,6 +38,7 @@ public class BoardManager : MonoBehaviour {
 	private int layerMask = 1 << 8;
 	private Transform boardHolder;
 	private List <Vector2> gridPositions = new List<Vector2> ();
+	private GameManager gameManager;
 
 
 	void InitializeList() {
@@ -52,41 +53,56 @@ public class BoardManager : MonoBehaviour {
 	}
 
 	void BoardSetup (bool fixedStart) {
+		Vector2 spawnLocation;
 		if (fixedStart) {
-
-		} else {
-//			for (int x = (int)randomPosition.x - bufferSize; x < (int)randomPosition.x + bufferSize + 1; x++) {
-//				for (int y = (int)randomPosition.y - bufferSize; y < (int)randomPosition.y + bufferSize + 1; y++) {
-//					gridPositions.Remove (new Vector2 (x, y));
-//				}
-//			}
-
-			Vector2 spawnLocation = new Vector2 (Random.Range (bufferSize+1, columns - (bufferSize+2)), Random.Range (bufferSize, rows - (bufferSize+2)));
-			boardHolder = new GameObject ("Board").transform;
-			wallHolder = new GameObject ("Walls").transform;
-			for (int x = -1; x < columns + 1; x++) {
-				for (int y = -1; y < rows + 1; y++) {
-					GameObject toInstantiate;
-					if (x == -1 || x == columns || y == -1 || y == rows)
-						toInstantiate = indestructibleWallTiles [0];
-					else if (x <= spawnLocation.x + (bufferSize+1) && x >= spawnLocation.x - (bufferSize+1) && y <= spawnLocation.y + (bufferSize+1) && y >= spawnLocation.y - (bufferSize+1)) {
-						gridPositions.Remove (new Vector2 (x, y));
-						if (x <= spawnLocation.x + bufferSize && x >= spawnLocation.x - bufferSize && y <= spawnLocation.y + bufferSize && y >= spawnLocation.y - bufferSize)
-							toInstantiate = warpPoint;
-						else 
-							toInstantiate = floorTiles [Random.Range (0, floorTiles.Length)];
-					} else 
-						toInstantiate = floorTiles [Random.Range (0, floorTiles.Length)];
-					
-
-					GameObject instance = Instantiate (toInstantiate, new Vector2 (x, y), Quaternion.identity) as GameObject;
-					instance.transform.SetParent (boardHolder);
+			spawnLocation = new Vector2 (17, 12);
+		
+			for (int i = (int)spawnLocation.x - 7; i <= (int)spawnLocation.x - 4; i++) {
+				for (int j = (int)spawnLocation.y; j <= (int)spawnLocation.y + 6; j++) {
+					gridPositions.Remove (new Vector2 (i, j));
 				}
 			}
-			GameObject objInstance = Instantiate (enemySpawnPoint, spawnLocation, Quaternion.identity) as GameObject;
-			objInstance.name = "elevator";
-			Instantiate (player, spawnLocation - new Vector2(1,1), Quaternion.identity);
-			//Camera.main.transform.position = new Vector3 (spawnLocation.x, spawnLocation.y, -20);
+			gridPositions.Add (new Vector2 (spawnLocation.x - 5, spawnLocation.y + 4));
+			gridPositions.Add (new Vector2 (spawnLocation.x - 4, spawnLocation.y + 4));
+			gridPositions.Add (new Vector2 (spawnLocation.x - 5, spawnLocation.y + 3));
+			gridPositions.Add (new Vector2 (spawnLocation.x - 4, spawnLocation.y + 3));
+			gridPositions.Add (new Vector2 (spawnLocation.x - 5, spawnLocation.y + 2));
+			gridPositions.Add (new Vector2 (spawnLocation.x - 4, spawnLocation.y + 2));
+
+		} else {
+			spawnLocation = new Vector2 (Random.Range (bufferSize + 1, columns - (bufferSize + 2)), Random.Range (bufferSize, rows - (bufferSize + 2)));
+		}
+		boardHolder = new GameObject ("Board").transform;
+		wallHolder = new GameObject ("Walls").transform;
+		for (int x = -1; x < columns + 1; x++) {
+			for (int y = -1; y < rows + 1; y++) {
+				GameObject toInstantiate;
+				if (x == -1 || x == columns || y == -1 || y == rows)
+					toInstantiate = indestructibleWallTiles [0];
+				else if (x <= spawnLocation.x + (bufferSize + 1) && x >= spawnLocation.x - (bufferSize + 1) && y <= spawnLocation.y + (bufferSize + 1) && y >= spawnLocation.y - (bufferSize + 1)) {
+					gridPositions.Remove (new Vector2 (x, y));
+					if (x <= spawnLocation.x + bufferSize && x >= spawnLocation.x - bufferSize && y <= spawnLocation.y + bufferSize && y >= spawnLocation.y - bufferSize)
+						toInstantiate = warpPoint;
+					else
+						toInstantiate = floorTiles [Random.Range (0, floorTiles.Length)];
+				} else
+					toInstantiate = floorTiles [Random.Range (0, floorTiles.Length)];
+					
+
+				GameObject instance = Instantiate (toInstantiate, new Vector2 (x, y), Quaternion.identity) as GameObject;
+				instance.transform.SetParent (boardHolder);
+			}
+		}
+		GameObject objInstance = Instantiate (enemySpawnPoint, spawnLocation, Quaternion.identity) as GameObject;
+		objInstance.name = "elevator";
+
+		//Camera.main.transform.position = new Vector3 (spawnLocation.x, spawnLocation.y, -20);
+		if (fixedStart) {
+			Instantiate (player, spawnLocation + new Vector2 (-5, 0), Quaternion.identity);
+			Instantiate (gameManager.buildManager.buildableObjects [0], new Vector3 (spawnLocation.x - 4, spawnLocation.y + 0, 0), Quaternion.identity);
+			Instantiate (gameManager.buildManager.buildableObjects [4], new Vector3 (spawnLocation.x - 4, spawnLocation.y + 5, 0), Quaternion.identity);
+		} else {
+			Instantiate (player, spawnLocation - new Vector2 (1, 1), Quaternion.identity);
 		}
 	}
 
@@ -150,7 +166,28 @@ public class BoardManager : MonoBehaviour {
 	}
 
 	public void DefaultWaveSpawn(int maxNumSpawns) {
-		SpawnObjectsAroundObject (GameObject.Find("elevator"), bufferSize, maxNumSpawns, enemyTiles);
+		GameObject[] soldierArray = new GameObject[1] { enemyTiles [0] };
+		if (gameManager.waveNumber == 1) {
+			//Soldier tutorial spawn
+			SpawnObjectsAroundObject (GameObject.Find ("elevator"), bufferSize, 1, soldierArray);
+		} else if (gameManager.waveNumber == 2) {
+			//Assassin tutorial spawn
+			SpawnObjectsAroundObject (GameObject.Find ("elevator"), bufferSize, 1, new GameObject[1] { enemyTiles [1] });
+			SpawnObjectsAroundObject (GameObject.Find ("elevator"), bufferSize, 1, soldierArray);
+		} else if (gameManager.waveNumber == 3) {
+			//Shielder tutorial spawn
+			SpawnObjectsAroundObject (GameObject.Find ("elevator"), bufferSize, 1, new GameObject[1] { enemyTiles [3] });
+			SpawnObjectsAroundObject (GameObject.Find ("elevator"), bufferSize, 1, soldierArray);
+		} else if (gameManager.waveNumber == 4) {
+			//Robot tutorial spawn
+			SpawnObjectsAroundObject (GameObject.Find ("elevator"), bufferSize, 1, new GameObject[1] { enemyTiles [2] });
+			SpawnObjectsAroundObject (GameObject.Find ("elevator"), bufferSize, 2, soldierArray);
+		} else if (gameManager.waveNumber <= 30) {
+			SpawnObjectsAroundObject (GameObject.Find ("elevator"), bufferSize, maxNumSpawns - 1, enemyTiles);
+			SpawnObjectsAroundObject (GameObject.Find ("elevator"), bufferSize, 1, soldierArray);
+		} else {
+			SpawnObjectsAroundObject (GameObject.Find ("elevator"), bufferSize, maxNumSpawns, enemyTiles);
+		}
 	}
 
 	private void SpawnObjectsAroundObject(GameObject objectToSpawnAround, int maxRadius, int maxNumSpawns, GameObject[] tileArray) {
@@ -175,10 +212,11 @@ public class BoardManager : MonoBehaviour {
 		}
 	}
 
-	public void SetupScene() {
+	public void SetupScene(bool customizeBase) {
+		gameManager = GameManager.instance;
 		InitializeList ();
-		BoardSetup (false);
-		//FillRemainingSpaceWithWalls ();
+		BoardSetup (customizeBase);
+		FillRemainingSpaceWithWalls ();
 		for (int i = 0; i < wallHolder.childCount; i++) {
 			wallHolder.GetChild (i).GetComponent<MegaWall> ().FindNeighbors ();
 		}

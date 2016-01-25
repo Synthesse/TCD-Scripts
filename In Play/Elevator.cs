@@ -1,15 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class Elevator : PhysicalObject {
+public class Elevator : SelectableObject {
 
-	// Use this for initialization
-	void Start () {
-	
-	}
-	
-	// Update is called once per frame
-	void Update () {
-	
+	void Start() {
+		base.Start ();
+		attackable = false;
+		objectName = "Teleporter";
+		special = "Invulnerable. Teleports enemy units every wave.";
 	}
 }

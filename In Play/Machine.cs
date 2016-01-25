@@ -10,7 +10,9 @@ public abstract class Machine : SelectableObject {
 	public int def;
 	public string status = "Normal";
 
-	protected virtual void Awake () {
+	protected override void Awake () {
+		spriteRenderer = gameObject.GetComponent<SpriteRenderer> ();
+		storedColor = spriteRenderer.color;
 		currentHP = 1;
 		maxHP = 1;
 		def = 0;
@@ -28,6 +30,11 @@ public abstract class Machine : SelectableObject {
 		}
 	}
 
+	public virtual void Heal (int heal) {
+		currentHP = Mathf.Min (currentHP + heal, maxHP);
+		UpdateVitalsUIText ();
+	}
+
 	public virtual void Kill () {
 		gameManager.combatManager.targetedObjects.Remove (gameObject);
 		Destroy (gameObject);
@@ -37,7 +44,7 @@ public abstract class Machine : SelectableObject {
 	{
 		base.UpdateObjectUIText ();
 		gameManager.uiManager.UpdateVitalsText (currentHP, maxHP, 0, 0);
-		gameManager.uiManager.UpdateDetailsText (status, maxHP, 0, def, 0, "");
+		gameManager.uiManager.UpdateDetailsText (status, maxHP, 0, def, 0, special);
 	}
 
 	protected virtual void UpdateVitalsUIText() {
