@@ -3,6 +3,7 @@ using System.Collections;
 
 public class SoundManager : MonoBehaviour {
 
+	public GameManager gameManager;
 	public AudioSource sfxSource;
 	public AudioSource musicSource;
 	public float lowPitchRange = 0.95f;
@@ -24,10 +25,12 @@ public class SoundManager : MonoBehaviour {
 	public AudioClip buildMusic;
 	public AudioClip lowCombatMusic;
 	public AudioClip highCombatMuisc;
+	public AudioClip[] boldonSFX;
 	public bool raisedTension;
 	private bool loopSound;
 
 	void Start() {
+		gameManager = GameManager.instance;
 		loopSound = false;
 		raisedTension = false;
 	}
@@ -91,15 +94,31 @@ public class SoundManager : MonoBehaviour {
 	}
 
 	public void PlayLaserSFX() {
-		PlaySingle (laserSFX, true);
+		if (gameManager.playerPrefs.boldonVO)
+			PlaySingle (boldonSFX [4], true);
+		else
+			PlaySingle (laserSFX, true);
 	}
 
 	public void PlayExplosionSFX() {
-		PlaySingle (explosionSFX, true);
+		if (gameManager.playerPrefs.boldonVO)
+			PlaySingle (boldonSFX [1], true);
+		else
+			PlaySingle (explosionSFX, true);
+	}
+
+	public void PlayMineExplosionSFX() {
+		if (gameManager.playerPrefs.boldonVO)
+			PlaySingle (boldonSFX [6], false);
+		else
+			PlaySingle (explosionSFX, true);
 	}
 
 	public void PlaySlashSFX() {
-		PlaySingle (slashSFXArray, true);
+		if (gameManager.playerPrefs.boldonVO)
+			PlaySingle (boldonSFX [9], true);
+		else
+			PlaySingle (slashSFXArray, true);
 	}
 
 	public void PlayBreakWallSFX() {
@@ -115,8 +134,13 @@ public class SoundManager : MonoBehaviour {
 	}
 
 	public void PlayPsySFX() {
-		loopSound = true;
-		StartCoroutine(PlayLoop (psySFX, false));
+		if (gameManager.playerPrefs.boldonVO) {
+			loopSound = true;
+			StartCoroutine (PlayLoop (boldonSFX [7], false));
+		} else {
+			loopSound = true;
+			StartCoroutine (PlayLoop (psySFX, false));
+		}
 	}
 
 	public void PlayActivateSFX() {
@@ -136,7 +160,10 @@ public class SoundManager : MonoBehaviour {
 	}
 
 	public void PlayTargetVO() {
-		PlaySingle (captainTargetSFX, false);
+		if (gameManager.playerPrefs.boldonVO)
+			PlaySingle (new AudioClip[4] {boldonSFX [3],boldonSFX [5],boldonSFX [8],boldonSFX [10]}, false);
+		else
+			PlaySingle (captainTargetSFX, false);
 	}
 
 	public void PlayWalkSFX() {

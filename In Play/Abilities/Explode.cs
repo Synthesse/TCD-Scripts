@@ -21,7 +21,7 @@ public class Explode : Ability {
 	public override IEnumerator Execute(Defenses self) {
 		self.GetComponent<RemoteMine> ().collider.enabled = false;
 		Collider2D[] collidersHit = Physics2D.OverlapAreaAll ((Vector2)self.transform.position - new Vector2 (1, 1), (Vector2)self.transform.position + new Vector2 (1, 1), layerMask);
-		gameManager.soundManager.PlayExplosionSFX ();
+		gameManager.soundManager.PlayMineExplosionSFX ();
 		GameObject explosion = GameObject.Instantiate (gameManager.combatManager.explosionObj, self.transform.position, self.transform.rotation) as GameObject;
 		//yield return new WaitUntil (() => (explosion.GetComponent<Animator> ().GetNextAnimatorStateInfo (0).IsName ("finished")));
 		yield return new WaitForSeconds(0.75f);
